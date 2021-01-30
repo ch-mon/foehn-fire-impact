@@ -1,0 +1,11 @@
+PAR,Einheit,Beschreibung,final_variable_name
+wcc006s0,Code,Föhnindex,foehn
+tre200s0,Grad Celsius,Lufttemperatur 2 m über Boden; Momentanwert,TT
+fu3010z0,Kilometer/Stunde,Windgeschwindigkeit; Zehnminutenmittel,FF
+dkl010z0,Grad,Windrichtung; Zehnminutenmittel,DD
+fu3010z1,Kilometer/Stunde,Böenspitze (Sekundenböe); Maximum,FFX
+ure200s0,Prozent,Relative Luftfeuchtigkeit 2 m über Boden; Momentanwert,UU
+pp0qffs0,Hektopascal,Luftdruck reduziert auf Meeresniveau (QFF); Momentanwert,SLP
+prestas0,Hektopascal,Luftdruck auf Stationshöhe (QFE); Momentanwert,P
+pp0qnhs0,Hektopascal,Luftdruck reduziert auf Meeresniveau mit Standardatmosphäre (QNH); Momentanwert,QNH
+ppz700s0,Geopotentielle Meter,Geopotentielle Höhe der 700 hPa-Fläche; Momentanwert,Z700

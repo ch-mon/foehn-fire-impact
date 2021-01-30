@@ -1,0 +1,16 @@
+name: foehnfirecorr
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.8
+  - jupyterlab
+  - pandas
+  - scipy
+  - scikit-learn
+  - geopy
+  - pip
+  - cookiecutter
+  - pip:
+    - kedro
+    - kedro-viz
