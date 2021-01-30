@@ -1,19 +1,9 @@
 # Foehn fire impact
 
 ## Overview
-
-This is your new Kedro project, which was generated using `Kedro 0.17.0`.
+This project takes past foehn windsand fire data within Switzerland into account, cleanses and merges the data, and finally allows for investigation of the impact of foehn winds onto forest fires in the past 40 years. The project was originally generated with Dataiku but has been rebuilt with Kedro (`Kedro 0.17.0`) for shareability, reproducibility and learning purposes.
 
 Take a look at the [Kedro documentation](https://kedro.readthedocs.io) to get started.
-
-## Rules and guidelines
-
-In order to get the best out of the template:
-
-* Don't remove any lines from the `.gitignore` file we provide
-* Make sure your results can be reproduced by following a [data engineering convention](https://kedro.readthedocs.io/en/stable/11_faq/01_faq.html#what-is-data-engineering-convention)
-* Don't commit data to your repository
-* Don't commit any credentials or your local configuration to your repository. Keep all your credentials and local configuration in `conf/local/`
 
 ## How to install dependencies
 
