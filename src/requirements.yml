@@ -11,6 +11,8 @@ dependencies:
   - geopy
   - pip
   - cookiecutter
+  - xlrd
   - pip:
     - kedro
     - kedro-viz
+    - openpyxl

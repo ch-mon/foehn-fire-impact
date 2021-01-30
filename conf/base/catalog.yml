@@ -43,8 +43,11 @@
 # template. Please feel free to remove it once you remove the example pipeline.
 
 fire_data:
-  type: pandas.CSVDataSet
-  filepath: data/01_raw/FireData_1980_2019.csv
+  type: pandas.ExcelDataSet
+  filepath: data/01_raw/export_fires_1980-2019.xlsx
+  load_args:
+    engine: openpyxl
+    parse_dates: ["start date", "date end of fire", "start date (solar time)", "end date (solar time)"]
   
 fire_data_cleansed:
   type: pandas.CSVDataSet
