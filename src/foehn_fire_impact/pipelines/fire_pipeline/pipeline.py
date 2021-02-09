@@ -12,15 +12,21 @@ def create_pipeline(**kwargs):
         [
             node(
                 cleanse_fire_data,
-                "fire_data",
-                "fire_data_basic_cleanse",
+                "raw_fire_data",
+                "fire_data_basic_cleansed",
                 name="cleanse_fire_data"
             ),
             node(
                 transform_datetime,
-                "fire_data_basic_cleanse",
-                "fire_data_cleansed",
+                "fire_data_basic_cleansed",
+                "fire_data_with_date_info",
                 name="transform_datetime"
+            ),
+            node(
+                fill_missing_coordinates,
+                "fire_data_with_date_info",
+                "fire_data_cleansed",
+                name="fill_missing_coordinates"
             )
         ]
     )

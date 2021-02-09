@@ -12,6 +12,11 @@ from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
+from geopy.geocoders import Nominatim
+import time
+
+from .utils import decimalWSG84_to_LV3, LV3_to_decimalWSG84
+
 
 def cleanse_fire_data(df: pd.DataFrame) -> pd.DataFrame:
     # Drop superfluous columns
@@ -76,4 +81,29 @@ def transform_datetime(df: pd.DataFrame) -> pd.DataFrame:
     logging.debug(len(df.index))
     return df
 
+def fill_missing_coordinates(df):
+    '''
+    Obtain coordinates for municipality and fill the missing coordinates in dataframe
+    :param df:
+    :return:
+    '''
 
+    # Identify where x and y are missing
+    mask = df["coordinates_x"].isnull() | df["coordinates_y"].isnull()
+    list_of_municipalities = sorted(list(set(df.loc[mask, "current municipality"])))
+    logging.info(list_of_municipalities)
+
+    for municipality in list_of_municipalities:
+        geolocator = Nominatim(user_agent="MapSwissCitiesToLocation", format_string = "%s, Switzerland")
+        location = geolocator.geocode(municipality)
+        time.sleep(1)
+        print(f"{municipality} ({location.address}): ({location.latitude}, {location.longitude})")
+        x, y = decimalWSG84_to_LV3(lon = location.longitude, lat = location.latitude)
+
+        municipality_mask = (df["current municipality"] == municipality)
+        df.loc[municipality_mask & mask, "coordinates_x"] = x
+        df.loc[municipality_mask & mask, "coordinates_y"] = y
+
+    df["longitude"], df["latitude"] = LV3_to_decimalWSG84(x = df["coordinates_x"], y=df["coordinates_y"])
+
+    return df
