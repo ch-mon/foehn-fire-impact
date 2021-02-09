@@ -13,13 +13,13 @@ def create_pipeline(**kwargs):
             node(
                 cleanse_fire_data,
                 "fire_data",
-                "fire_data_cleansed",
+                "fire_data_basic_cleanse",
                 name="cleanse_fire_data"
             ),
             node(
                 transform_datetime,
+                "fire_data_basic_cleanse",
                 "fire_data_cleansed",
-                "fire_data_cleansed_datetime",
                 name="transform_datetime"
             )
         ]
