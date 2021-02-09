@@ -2,3 +2,4 @@
 # remove the example pipeline from hooks.py and the example nodes in
 # `src/pipelines/`
 station_radius: 20000 # in metres = 20 km
+foehn_data_path: "/net/bio/dyn_soft/datasets/foehn.swissmetnet/" # location of the large foehn delivery from MeteoSwiss

@@ -9,3 +9,4 @@ pp0qffs0,Hektopascal,Luftdruck reduziert auf Meeresniveau (QFF); Momentanwert,SL
 prestas0,Hektopascal,Luftdruck auf Stationshöhe (QFE); Momentanwert,P
 pp0qnhs0,Hektopascal,Luftdruck reduziert auf Meeresniveau mit Standardatmosphäre (QNH); Momentanwert,QNH
 ppz700s0,Geopotentielle Meter,Geopotentielle Höhe der 700 hPa-Fläche; Momentanwert,Z700
+ppz850s0,Geopotentielle Meter,Geopotentielle Höhe der 850 hPa-Fläche; Momentanwert,Z850
