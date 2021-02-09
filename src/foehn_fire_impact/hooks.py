@@ -7,8 +7,6 @@ from kedro.io import DataCatalog
 from kedro.pipeline import Pipeline
 from kedro.versioning import Journal
 
-#from foehn_fire_impact.pipelines import data_engineering as de
-#from foehn_fire_impact.pipelines import data_science as ds
 from foehn_fire_impact.pipelines import fire_pipeline as fp
 from foehn_fire_impact.pipelines import foehn_pipeline as foehnpipe
 
