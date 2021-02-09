@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def decimalWSG84_to_LV3(lon, lat):
     '''
     Convert WSG84 to LV3 coordinates
@@ -37,3 +40,14 @@ def LV3_to_decimalWSG84(x, y):
     lat = phi * 100 / 36
 
     return lon, lat
+
+def calc_distance(x_coord_fire, y_coord_fire, x_coord_station, y_coord_station):
+    '''
+    Calculate closest distance between two points in LV03 coordinates
+    :param x_coord_fire:
+    :param y_coord_fire:
+    :param x_coord_station:
+    :param y_coord_station:
+    :return:
+    '''
+    return np.sqrt((x_coord_fire-x_coord_station)*(x_coord_fire-x_coord_station) + (y_coord_fire-y_coord_station)*(y_coord_fire-y_coord_station))

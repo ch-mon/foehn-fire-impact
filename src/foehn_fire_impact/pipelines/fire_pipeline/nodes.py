@@ -15,7 +15,7 @@ import pandas as pd
 from geopy.geocoders import Nominatim
 import time
 
-from .utils import decimalWSG84_to_LV3, LV3_to_decimalWSG84
+from .utils import decimalWSG84_to_LV3, LV3_to_decimalWSG84, calc_distance
 
 
 def cleanse_fire_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -113,3 +113,29 @@ def fill_missing_coordinates(df):
     df["longitude"], df["latitude"] = LV3_to_decimalWSG84(x = df["coordinates_x"], y=df["coordinates_y"])
 
     return df
+
+def calculate_closest_station(df_fire, df_stations, parameters):
+
+    # Drop Guetsch (which is just the crest station)
+    df_stations = df_stations.loc[df_stations["abbreviation"] != "GUE", :].reset_index(drop=True)
+
+    # Greedily search through all distances and find the minimum
+    df_fire["closest_station"] = ""
+    df_fire["closest_station_distance"] = 0.0
+    for i in range(len(df_fire.index)):
+        distances = calc_distance(df_fire.loc[i, "coordinates_x"], df_fire.loc[i, "coordinates_y"],
+                                  df_stations["x_LV03"], df_stations["y_LV03"])
+
+        n = distances.idxmin()
+        dist = distances.min()
+        if dist < parameters["station_radius"]:
+            df_fire.loc[i, "closest_station"] = df_stations.loc[n, "abbreviation"]
+            df_fire.loc[i, "closest_station_distance"] = dist
+        else:
+            df_fire.loc[i, "closest_station"] = np.nan
+            df_fire.loc[i, "closest_station_distance"] = np.nan
+
+    # Drop all rows where the fire could not mapped to a station
+    df_fire = df_fire.loc[df_fire["closest_station"].notnull(), :]
+    logging.debug(f"{len(df_fire)} fires in dataset")
+    return df_fire

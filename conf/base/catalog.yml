@@ -60,11 +60,15 @@ fire_data_cleansed:
   filepath: data/02_intermediate/FireData_1980_2019_cleansed.csv
 
 
+fire_data_cleansed_stations:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/fire_data_with_closest_station.csv
+
   
-foehnstations:
+foehn_stations:
   type: pandas.CSVDataSet
   filepath: data/01_raw/foehn_stations_switzerland.csv
   
-foehnparameters:
+foehn_parameters:
   type: pandas.CSVDataSet
   filepath: data/01_raw/meteorological_parameters.csv

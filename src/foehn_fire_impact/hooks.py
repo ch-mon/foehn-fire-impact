@@ -7,8 +7,8 @@ from kedro.io import DataCatalog
 from kedro.pipeline import Pipeline
 from kedro.versioning import Journal
 
-from foehn_fire_impact.pipelines import fire_pipeline as fp
-from foehn_fire_impact.pipelines import foehn_pipeline as foehnpipe
+from foehn_fire_impact.pipelines import fire_pipeline as firepipeline
+from foehn_fire_impact.pipelines import foehn_pipeline as foehnpipeline
 
 class ProjectHooks:
     @hook_impl
@@ -19,11 +19,11 @@ class ProjectHooks:
             A mapping from a pipeline name to a ``Pipeline`` object.
 
         """
-        fire_pipeline = fp.create_pipeline()
-        foehn_pipeline = foehnpipe.create_pipeline()
+        fire_pipeline = firepipeline.create_pipeline()
+        foehn_pipeline = foehnpipeline.create_pipeline()
 
         return {
-            "fp": fire_pipeline,
+            "fire_pipeline": fire_pipeline,
             "foehn_pipeline": foehn_pipeline,
             "__default__": fire_pipeline+foehn_pipeline,
         }

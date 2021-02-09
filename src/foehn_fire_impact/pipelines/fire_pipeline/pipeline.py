@@ -27,6 +27,13 @@ def create_pipeline(**kwargs):
                 "fire_data_with_date_info",
                 "fire_data_cleansed",
                 name="fill_missing_coordinates"
+            ),
+            node(
+                calculate_closest_station,
+                ["fire_data_cleansed", "foehn_stations", "parameters"],
+                "fire_data_cleansed_stations",
+                name="calculate_closest_station"
             )
+
         ]
     )
