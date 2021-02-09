@@ -1,6 +1,7 @@
 from src.foehn_fire_impact.pipelines.fire_pipeline.nodes import fill_missing_coordinates
 from src.foehn_fire_impact.pipelines.fire_pipeline.utils import decimalWSG84_to_LV3, LV3_to_decimalWSG84
 import numpy as np
+from kedro.config import ConfigLoader
 from kedro.io import DataCatalog
 
 
@@ -19,5 +20,9 @@ class TestFirePipeline:
         assert np.round(lat_fun, 6) == 46.044127
 
     def test_fill_missing_coordinates(self):
-        io = DataCatalog.from_config(catalog="conf/base/catalog.yml")
-        print(fill_missing_coordinates(io.load("fire_data_with_date_info")))
+        conf_loader = ConfigLoader(['conf/base'])
+        conf_catalog = conf_loader.get('catalog*', 'catalog/**')
+        catalog = DataCatalog.from_config(conf_catalog)
+        df = catalog.load("fire_data_cleansed")
+
+        assert df[["coordinates_x", "coordinates_y", "longitude", "latitude", "municipality"]].isnull().sum().sum() == 0

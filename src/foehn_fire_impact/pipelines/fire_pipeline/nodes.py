@@ -93,17 +93,23 @@ def fill_missing_coordinates(df):
     list_of_municipalities = sorted(list(set(df.loc[mask, "current municipality"])))
     logging.info(list_of_municipalities)
 
+    # Retrieve locations for all municipalities via Nominatim API
     for municipality in list_of_municipalities:
-        geolocator = Nominatim(user_agent="MapSwissCitiesToLocation", format_string = "%s, Switzerland")
-        location = geolocator.geocode(municipality)
+        # Retrieve information
         time.sleep(1)
-        print(f"{municipality} ({location.address}): ({location.latitude}, {location.longitude})")
+        geolocator = Nominatim(user_agent="MapSwissCitiesToLocation")
+        location = geolocator.geocode(municipality, country_codes="CH")
+        logging.info(f"{municipality} ({location.address}): ({location.latitude}, {location.longitude})")
+
+        # Convert to LV3 coordinates
         x, y = decimalWSG84_to_LV3(lon = location.longitude, lat = location.latitude)
 
+        # Complete missing entries in dataframe
         municipality_mask = (df["current municipality"] == municipality)
         df.loc[municipality_mask & mask, "coordinates_x"] = x
         df.loc[municipality_mask & mask, "coordinates_y"] = y
 
+    # Also create WSG84 coordinates
     df["longitude"], df["latitude"] = LV3_to_decimalWSG84(x = df["coordinates_x"], y=df["coordinates_y"])
 
     return df
