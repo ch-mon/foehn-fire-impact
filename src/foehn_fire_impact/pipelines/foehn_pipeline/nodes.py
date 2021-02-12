@@ -146,13 +146,19 @@ def merge_old_and_new_foehn_data(df_old, df_compr) -> pd.DataFrame:
     return df_compr
 
 
-def prepare_foehn_data_for_forest_fires(df) -> pd.DataFrame:
+def prepare_foehn_data_for_forest_fire_merge(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Prepare data to be merged with the cleansed fire data.
+    Before this step, all data can be used also for other analysis.
+    :param df: Dataframe with cleansed foehn data
+    :return: Dataframe which undertakes more steps unique to this analysis
+    """
     # Shift data from UTC format to Swiss time
     df["date"] = df["date"] + pd.Timedelta(hours=1)
 
-    numerical_columns = df.drop(["date"], axis=1).columns
-    df[numerical_columns] = df[numerical_columns].mask(df[numerical_columns] == "-", np.NaN)
-    df[numerical_columns] = df[numerical_columns].astype(float)
-    df[numerical_columns] = df[numerical_columns].mask(df[numerical_columns] > 2, np.NaN)
-    df[numerical_columns] = df[numerical_columns].mask(df[numerical_columns] == 1.0, 0.0)
-    df[numerical_columns] = df[numerical_columns].mask(df[numerical_columns] == 2.0, 1.0)
+    # Treat mixed foehn as non-foehn for this analysis (thus making foehn variable binary)
+    for col in df.filter(regex="foehn"):
+        df.loc[df[col] == 1.0, col] = 0.0
+        df.loc[df[col] == 2.0, col] = 1.0
+
+    return df

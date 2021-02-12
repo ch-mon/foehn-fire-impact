@@ -83,6 +83,12 @@ foehn_data_cleansed:
   load_args:
     parse_dates: ["date"]
 
+foehn_data_prepared:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/foehn_data_prepared.csv
+  load_args:
+    parse_dates: ["date"]
+
 # Additional data
 foehn_stations:
   type: pandas.CSVDataSet

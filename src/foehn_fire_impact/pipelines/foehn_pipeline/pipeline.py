@@ -25,7 +25,12 @@ def create_pipeline(**kwargs):
                 ["raw_north_foehn_data_old", "raw_foehn_data"],
                 "foehn_data_cleansed",
                 name="merge_old_and_new_foehn_data"
+            ),
+            node(
+                prepare_foehn_data_for_forest_fire_merge,
+                "foehn_data_cleansed",
+                "foehn_data_prepared",
+                name="prepare_foehn_data_for_forest_fire_merge"
             )
-
         ]
     )
