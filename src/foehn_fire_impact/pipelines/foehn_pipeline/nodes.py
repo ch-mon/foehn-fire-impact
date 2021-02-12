@@ -110,7 +110,8 @@ def load_older_north_foehn_data(parameters) -> pd.DataFrame:
 
 def merge_old_and_new_foehn_data(df_old, df_compr) -> pd.DataFrame:
     """
-    Merge the old north foehn data from Matteo with the new foehn data from MeteoSwiss
+    Merge the old north foehn data from Matteo with the new foehn data from MeteoSwiss.
+    Filter out the obvious wrong measurements.
     :param df_old: Old data delivery for north foehn data
     :param df_compr: Comprehensive second data delivery
     :return: Enriched dataframe which contains information from both data deliveries.
@@ -122,6 +123,25 @@ def merge_old_and_new_foehn_data(df_old, df_compr) -> pd.DataFrame:
     for col in df_old:
         logging.info(col)
         df_compr[col] = df_compr[col].fillna(df_old[col])
+
+    # Drop the first year, since here none of the rows contains any value
+    df_compr = df_compr.loc[df_compr["date"] >= np.datetime64("1981-01-01 00:00"), :].reset_index(drop=True)
+
+    # Resolve obvious measurement errors/missing values
+    df_compr.loc[df_compr["SBE_UU"] == 10000000.0, "SBE_UU"] = np.NaN
+    df_compr.loc[df_compr["SBO_DD"] == 10000000.0, "SBO_DD"] = np.NaN
+
+    # Filter geopotential heights (everything over 5000 on 850 hPa)
+    for col in df_compr.filter(regex="Z850"):
+        df_compr.loc[df_compr[col] > 5000.0, col] = np.NaN
+
+    # Filter wind speed (everything over 150 km/h)
+    for col in df_compr.filter(regex="FF$"):
+        df_compr.loc[df_compr[col] > 150.0, col] = np.NaN
+
+    # Filter wind speed gusts (everything over 200 km/h)
+    for col in df_compr.filter(regex="FFX"):
+        df_compr.loc[df_compr[col] > 200.0, col] = np.NaN
 
     return df_compr
 
