@@ -18,7 +18,14 @@ def create_pipeline(**kwargs):
                 load_older_north_foehn_data,
                 ["parameters"],
                 "raw_north_foehn_data_old",
-                name="load_old_foehn_data"
+                name="load_older_north_foehn_data"
+            ),
+            node(
+                merge_old_and_new_foehn_data,
+                ["raw_north_foehn_data_old", "raw_foehn_data"],
+                "foehn_data_cleansed",
+                name="merge_old_and_new_foehn_data"
             )
+
         ]
     )

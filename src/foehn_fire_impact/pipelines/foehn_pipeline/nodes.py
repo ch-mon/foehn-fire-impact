@@ -96,8 +96,22 @@ def load_older_north_foehn_data(parameters):
     return df_final
 
 
-def merge_old_and_new_foehn_data(df_new):
-    ...
+def merge_old_and_new_foehn_data(df_old, df_compr):
+    '''
+    Merge the old north foehn data from Matteo with the new foehn data from MeteoSwiss
+    :param df_old:
+    :param df_compr:
+    :return:
+    '''
+    # If this assertion fails, then dataframes do not have the same datetime column and next steps are not possible
+    assert (df_compr["date"] == df_old["date"]).all()
+
+    # Fill every value which is NaN in comprehensive data with value from old north foehn data
+    for col in df_old:
+        logging.info(col)
+        df_compr[col] = df_compr[col].fillna(df_old[col])
+
+    return df_compr
 
 
 def cleanse_foehn_data(df):
