@@ -9,7 +9,15 @@ import os
 from .utils import *
 
 
-def load_comprehensive_foehn_data(df_meteo_params, parameters):
+def load_comprehensive_foehn_data(df_meteo_params, parameters) -> pd.DataFrame:
+    """
+    Load the huge data dump from MeteoSwiss for all foehn stations in Switzerland.
+    Bring it into processable columns and perform some safety checks (e.g. no 3 or 6 hourly values anymore)
+    :param df_meteo_params: Table with necessary translation between variable names
+    :param parameters: Dict with filepath to data delivery
+    :return: Dataframe with all parameters and on a consistent 10-minute time axis.
+    """
+
     meteo_param_mapping = dict(zip(df_meteo_params["PAR"].values, df_meteo_params["final_variable_name"].values))
 
     # Read in North foehn data
@@ -42,22 +50,20 @@ def load_comprehensive_foehn_data(df_meteo_params, parameters):
             if len(df.index) == 0:
                 continue
 
-            # Convert columns and throw out 6-hourly values
+            # Convert columns to datetime
             df["date"] = pd.to_datetime(df["date"], format="%Y%m%d%H%M00")
 
-            ten_minute_mask = (df["date"].dt.minute == 10)
-            amount_of_ten_minute_timestamps = ten_minute_mask.sum()
-            index_start_of_10minute_measurements = ten_minute_mask.idxmax()
+            # Only allow values which have a spacing of 10 minutes (there are 3 and 6-hourly values in the dataset)
+            ten_minute_mask = ((df["date"].shift(periods=(-1)) - df["date"]) == pd.Timedelta(minutes=10))
+            if (df.iloc[-1, 0] - df.iloc[-2, 0]) == pd.Timedelta(minutes=10): # Fix last entry of mask due to shift side effect
+                ten_minute_mask.iloc[-1] = True
+            df = df.loc[ten_minute_mask, :]
 
-            if amount_of_ten_minute_timestamps != 0:
+            # Control if a previous period already exists for specific variable
+            if final_variable_name not in dict_of_dicts.keys():
+                dict_of_dicts[final_variable_name] = dict()
 
-                df = df.loc[(index_start_of_10minute_measurements - 1):, :]
-
-                # Control if a previous period already exists for specific variable
-                if final_variable_name not in dict_of_dicts.keys():
-                    dict_of_dicts[final_variable_name] = dict()
-
-                dict_of_dicts[final_variable_name].update(dict(zip(df["date"].values, df[final_variable_name].values)))
+            dict_of_dicts[final_variable_name].update(dict(zip(df["date"].values, df[final_variable_name].values)))
 
     # Ensure a continuous dataframe and join dictionaries
     logging.info("Started joining")
@@ -73,12 +79,18 @@ def load_comprehensive_foehn_data(df_meteo_params, parameters):
     return df_final
 
 
-def load_older_north_foehn_data(parameters):
+def load_older_north_foehn_data(parameters) -> pd.DataFrame:
+    """
+    Load an older data delivery from MeteoSwiss which includes north foehn data that is not included in the newer data delivery.
+    Their datawarhouse did not get filled with these values.
+    :param parameters: Dict with filepath to data delivery
+    :return: Dataframe with all parameters and on a consistent 10-minute time axis.
+    """
+    # Ensure a continuous dataframe
     df_final = pd.DataFrame(pd.date_range(start='1980-01-01 00:00', end='2019-12-31 23:59', freq="10min"), columns=["date"])
 
-    # Read in North foehn data
+    # Read in North foehn data and merge into continuous dataframe
     north_foehn_list = os.listdir(parameters["older_north_foehn_data_path"])
-
     for location in north_foehn_list:
         logging.info(location)
         df = pd.read_csv(os.path.join(parameters["older_north_foehn_data_path"], location),
@@ -96,13 +108,13 @@ def load_older_north_foehn_data(parameters):
     return df_final
 
 
-def merge_old_and_new_foehn_data(df_old, df_compr):
-    '''
+def merge_old_and_new_foehn_data(df_old, df_compr) -> pd.DataFrame:
+    """
     Merge the old north foehn data from Matteo with the new foehn data from MeteoSwiss
-    :param df_old:
-    :param df_compr:
-    :return:
-    '''
+    :param df_old: Old data delivery for north foehn data
+    :param df_compr: Comprehensive second data delivery
+    :return: Enriched dataframe which contains information from both data deliveries.
+    """
     # If this assertion fails, then dataframes do not have the same datetime column and next steps are not possible
     assert (df_compr["date"] == df_old["date"]).all()
 
@@ -114,7 +126,7 @@ def merge_old_and_new_foehn_data(df_old, df_compr):
     return df_compr
 
 
-def cleanse_foehn_data(df):
+def prepare_foehn_data_for_forest_fires(df) -> pd.DataFrame:
     # Shift data from UTC format to Swiss time
     df["date"] = df["date"] + pd.Timedelta(hours=1)
 
