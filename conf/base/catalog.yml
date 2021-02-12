@@ -71,6 +71,12 @@ raw_foehn_data:
   load_args:
     parse_dates: ["date"]
 
+raw_north_foehn_data_old:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/raw_north_foehn_data_old.csv
+  load_args:
+    parse_dates: ["date"]
+
 # Additional data
 foehn_stations:
   type: pandas.CSVDataSet

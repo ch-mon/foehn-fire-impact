@@ -6,6 +6,7 @@ from typing import Any, Dict
 import numpy as np
 import pandas as pd
 import os
+from .utils import *
 
 
 def load_comprehensive_foehn_data(df_meteo_params, parameters):
@@ -34,7 +35,8 @@ def load_comprehensive_foehn_data(df_meteo_params, parameters):
             final_variable_name = f"{station_abbr}_{meteo_param_mapping[parameter]}"
 
             # Read file
-            df = pd.read_csv(os.path.join(root, file), delimiter=";", usecols=["termin", parameter], encoding='latin1').rename(columns={"termin": "date", parameter: final_variable_name})
+            df = pd.read_csv(os.path.join(root, file), delimiter=";", usecols=["termin", parameter],
+                             encoding='latin1').rename(columns={"termin": "date", parameter: final_variable_name})
 
             # If dataframe does not contain rows, continue
             if len(df.index) == 0:
@@ -70,9 +72,9 @@ def load_comprehensive_foehn_data(df_meteo_params, parameters):
 
     return df_final
 
-def load_older_data(parameters):
 
-    df_final = pd.DataFrame(index=pd.date_range(start='1980-01-01 00:00', end='2019-12-31 23:59', freq="10min"))
+def load_older_north_foehn_data(parameters):
+    df_final = pd.DataFrame(pd.date_range(start='1980-01-01 00:00', end='2019-12-31 23:59', freq="10min"), columns=["date"])
 
     # Read in North foehn data
     north_foehn_list = os.listdir(parameters["older_north_foehn_data_path"])
@@ -85,30 +87,11 @@ def load_older_data(parameters):
         df["date"] = pd.to_datetime(df["date"], format="%Y%m%d%H%M")
         df.columns = ["date", location[0:3] + "_foehn"]
         df.dropna(subset=["date"], inplace=True)
-        df_final = df_final.merge(df, on="date", how="left", validate="one_to_one")
+        df_final = df_final.merge(df, on="date", how="left")
 
-    # TODO: Combine the MAE and MAW station into one MAG column
-    MAG_dummy = df_final["MAE_foehn"].copy()
-    MAG_dummy_mask = (df_final["MAW_foehn"] == 1.0)
-    MAG_dummy.loc[MAG_dummy_mask] = 1.0
-    MAG_dummy_mask = (df_final["MAE_foehn"] == 0.0) & (df_final["MAW_foehn"].isnull())
-    MAG_dummy.loc[MAG_dummy_mask] = np.NaN
-
-    df_final.loc[df_final["date"].dt.year < 2017, "MAG_foehn"] = MAG_dummy.loc[
-        df_final["date"].dt.year < 2017].values
-
-    # TODO: Combine the OTE and OTW station into one OTL column
-    df_final["OTL_foehn"] = np.NaN
-    OTL_dummy = df_final["OTE_foehn"].copy()
-    OTL_dummy_mask = (df_final["OTW_foehn"] == 1.0)
-    OTL_dummy.loc[OTL_dummy_mask] = 1.0
-    OTL_dummy_mask = (df_final["OTE_foehn"] == 0.0) & (df_final["OTW_foehn"].isnull())
-    OTL_dummy.loc[OTL_dummy_mask] = np.NaN
-
-    df_final.loc[df_final["date"].dt.year < 2017, "OTL_foehn"] = OTL_dummy.loc[
-        df_final["date"].dt.year < 2017].values
-
-    df_final.drop(["MAW_foehn", "MAE_foehn", "OTW_foehn", "OTE_foehn"], inplace=True, axis=1)
+    # Combine the east and west stations in MAG and OTL
+    df_final = combine_east_west_stations(df_final, "MAE_foehn", "MAW_foehn", "MAG_foehn")
+    df_final = combine_east_west_stations(df_final, "OTE_foehn", "OTW_foehn", "OTL_foehn")
 
     return df_final
 
@@ -116,8 +99,8 @@ def load_older_data(parameters):
 def merge_old_and_new_foehn_data(df_new):
     ...
 
-def cleanse_foehn_data(df):
 
+def cleanse_foehn_data(df):
     # Shift data from UTC format to Swiss time
     df["date"] = df["date"] + pd.Timedelta(hours=1)
 
