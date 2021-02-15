@@ -75,9 +75,6 @@ def transform_datetime(df: pd.DataFrame) -> pd.DataFrame:
     # Drop durations which are negative
     df = df.loc[~((df["duration_min"] <= 0.0) | (df["duration_max"] <= 0.0)), :]
 
-    # Drop unnecessary columns again
-    df = df.drop(columns=["start_date_min", "start_date_max", "end_date_min", "end_date_max"])
-
     logging.debug(len(df.index))
     return df
 

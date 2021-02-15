@@ -63,6 +63,8 @@ fire_data_cleansed:
 fire_data_cleansed_stations:
   type: pandas.CSVDataSet
   filepath: data/03_primary/fire_data_with_closest_station.csv
+  load_args:
+    parse_dates: ["start_date_min"]
 
 # Foehn data
 raw_foehn_data:
@@ -88,6 +90,19 @@ foehn_data_prepared:
   filepath: data/03_primary/foehn_data_prepared.csv
   load_args:
     parse_dates: ["date"]
+
+# Foehn fire data
+fire_data_with_foehn:
+  type: pandas.CSVDataSet
+  filepath: data/04_feature/fire_data_with_foehn.csv
+  load_args:
+    parse_dates: ["start_date_min"]
+
+fire_data_with_foehn_and_control_variables:
+  type: pandas.CSVDataSet
+  filepath: data/04_feature/fire_data_with_foehn_and_control_variables.csv
+  load_args:
+    parse_dates: ["start_date_min"]
 
 # Additional data
 foehn_stations:
