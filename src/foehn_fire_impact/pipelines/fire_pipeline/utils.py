@@ -2,12 +2,13 @@ import numpy as np
 
 
 def decimalWSG84_to_LV3(lon, lat):
-    '''
-    Convert WSG84 to LV3 coordinates
-    :param lon:
-    :param lat:
-    :return:
-    '''
+    """
+    Convert WSG84 to LV3 coordinates.
+    See https://www.swisstopo.admin.ch/en/maps-data-online/calculation-services.html for details
+    :param lon: Longitude coordinate (in WSG84)
+    :param lat: Latitude coordinate (in WSG84)
+    :return: Coordinates in LV3 system
+    """
     phi = lat * 3600
     lambda_ = lon * 3600
 
@@ -24,12 +25,13 @@ def decimalWSG84_to_LV3(lon, lat):
 
 
 def LV3_to_decimalWSG84(x, y):
-    '''
-    Convert LV3 to WSG84 coordinates
-    :param x:
-    :param y:
-    :return:
-    '''
+    """
+    Convert LV3 to WSG84 coordinates.
+    See https://www.swisstopo.admin.ch/en/maps-data-online/calculation-services.html for details
+    :param x: X coordinate (in LV3)
+    :param y: Y coordinate (in LV3)
+    :return: Coordinates in WSG84 system
+    """
     y = (y - 600000) / 1000000
     x = (x - 200000) / 1000000
 
@@ -41,13 +43,14 @@ def LV3_to_decimalWSG84(x, y):
 
     return lon, lat
 
+
 def calc_distance(x_coord_fire, y_coord_fire, x_coord_station, y_coord_station):
-    '''
-    Calculate closest distance between two points in LV03 coordinates
-    :param x_coord_fire:
-    :param y_coord_fire:
-    :param x_coord_station:
-    :param y_coord_station:
-    :return:
-    '''
+    """
+    Calculate closest distance between two points in LV03 coordinates.
+    :param x_coord_fire: X coordinate of fire
+    :param y_coord_fire: Y coordinate of fire
+    :param x_coord_station: X coordinate of a weather station
+    :param y_coord_station: Y coordinate of a weather station
+    :return: Euclidean distance between fire and a weather station
+    """
     return np.sqrt((x_coord_fire-x_coord_station)*(x_coord_fire-x_coord_station) + (y_coord_fire-y_coord_station)*(y_coord_fire-y_coord_station))

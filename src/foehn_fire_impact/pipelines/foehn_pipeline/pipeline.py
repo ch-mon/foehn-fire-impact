@@ -1,4 +1,6 @@
-
+"""
+Pipeline to load and cleanse two data dumps from MeteoSwiss.
+"""
 
 from kedro.pipeline import Pipeline, node
 

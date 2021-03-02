@@ -23,6 +23,7 @@ logs/**
 !data/01_raw/foehn_stations_switzerland.csv
 !data/01_raw/meteorological_parameters.csv
 !data/01_raw/export_fires_1980-2019.xlsx
+!data/04_feature/fire_data_with_foehn_and_control_variables.csv
 
 ##########################
 # Common files

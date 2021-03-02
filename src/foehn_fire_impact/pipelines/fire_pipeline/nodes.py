@@ -1,24 +1,17 @@
-
-
-"""Example code for the nodes in the example pipeline. This code is meant
-just for illustrating basic Kedro features.
-
-Delete this when you start working on your own Kedro project.
-"""
-# pylint: disable=invalid-name
-
 import logging
-from typing import Any, Dict
-
 import numpy as np
 import pandas as pd
 from geopy.geocoders import Nominatim
 import time
-
 from .utils import decimalWSG84_to_LV3, LV3_to_decimalWSG84, calc_distance
 
 
 def cleanse_fire_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    First basic cleanse of the fire database
+    :param df: Fire dataframe
+    :return: Cleansed fire dataframe
+    """
     # Drop superfluous columns
     df.drop(columns=["ID cause reliability", "ID Cause", "ID exposition", "ID accuracy coordinates",
                           "ID accuracy end date", "ID accuracy start date", "ID current municipality",
@@ -45,6 +38,11 @@ def cleanse_fire_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def transform_datetime(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Transform date values in dataframe and add fire length column. Also drop fires with negative duration.
+    :param df: Fire dataframe
+    :return: Fire dataframe with enriched date information
+    """
 
     # Initialize start and end fire datetimes
     df["start_date_min"] = pd.NaT
@@ -81,8 +79,8 @@ def transform_datetime(df: pd.DataFrame) -> pd.DataFrame:
 def fill_missing_coordinates(df):
     '''
     Obtain coordinates for municipality and fill the missing coordinates in dataframe
-    :param df:
-    :return:
+    :param df: Fire dataframe
+    :return: Fire dataframe with filled coordinates
     '''
 
     # Identify where x and y are missing
@@ -111,7 +109,15 @@ def fill_missing_coordinates(df):
 
     return df
 
+
 def calculate_closest_station(df_fire, df_stations, parameters):
+    """
+    Map each fire to the closest weather observation station
+    :param df_fire: Fire dataframe
+    :param df_stations: Datafraem with all stations where a foehn index is available
+    :param parameters: Dict which holds the radius to consider around each weather station
+    :return: Fire dataframe with now has the closest weather station associated.
+    """
 
     # Drop Guetsch (which is just the crest station)
     df_stations = df_stations.loc[df_stations["abbreviation"] != "GUE", :].reset_index(drop=True)
@@ -125,6 +131,7 @@ def calculate_closest_station(df_fire, df_stations, parameters):
 
         n = distances.idxmin()
         dist = distances.min()
+        # Only map fires which are in a given radius around one of the weather stations
         if dist < parameters["station_radius"]:
             df_fire.loc[i, "closest_station"] = df_stations.loc[n, "abbreviation"]
             df_fire.loc[i, "closest_station_distance"] = dist

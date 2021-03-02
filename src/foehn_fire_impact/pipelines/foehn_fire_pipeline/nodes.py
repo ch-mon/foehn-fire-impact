@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
-import pandas as pd, numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-import scipy as sci
-import sklearn as sk
-sns.set_style("whitegrid")
+import pandas as pd
+from .utils import *
+
 
 def map_fires_to_foehn(df_fires, df_foehn):
+    """
+    Map all forest fires to to corresponding time period in foehn dataframe and check for foehn occurrence and strength.
+    :param df_fires: Fire dataframe
+    :param df_foehn: Foehn dataframe
+    :return: Fire dataframe with mapped foehn values
+    """
     rows_list = []
 
+    # Loop over all fires
     for index, fire in df_fires.iterrows():
         new_features_dict = {}
 
@@ -29,56 +33,12 @@ def map_fires_to_foehn(df_fires, df_foehn):
     return pd.concat([df_fires, pd.DataFrame(rows_list)], axis=1)
 
 
-def sum_foehn_minutes_before_fire(fire, df_foehn, n_start, hours_before_start):
-
-    fire_mask = slice((n_start - 6 * hours_before_start), (n_start - 1))
-    foehn_values = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_foehn']
-
-    new_features_dict = {}
-    if foehn_values.isnull().sum() == 0:
-        foehn_minutes = foehn_values.sum() * 10
-
-        if foehn_minutes == 0:
-            TT_mean = np.NaN
-            UU_mean = np.NaN
-        else:
-            TT_mean = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_TT'].loc[foehn_values == 1.0].mean() - \
-                      df_foehn.loc[fire_mask, f'{fire["closest_station"]}_TT'].loc[foehn_values == 0].mean()
-            UU_mean = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_UU'].loc[foehn_values == 1.0].mean() - \
-                      df_foehn.loc[fire_mask, f'{fire["closest_station"]}_UU'].loc[foehn_values == 0].mean()
-
-        new_features_dict[f"foehn_minutes_{hours_before_start}_hour_before"] = foehn_minutes
-        new_features_dict[f"TT_mean_{hours_before_start}_hour_before"] = TT_mean
-        new_features_dict[f"UU_mean_{hours_before_start}_hour_before"] = UU_mean
-    else:
-        new_features_dict[f"foehn_minutes_{hours_before_start}_hour_before"] = np.NaN
-        new_features_dict[f"TT_mean_{hours_before_start}_hour_before"] = np.NaN
-        new_features_dict[f"UU_mean_{hours_before_start}_hour_before"] = np.NaN
-
-    return new_features_dict
-
-def sum_foehn_minutes_during_start_period_of_fire(fire, df_foehn, n_start, hours_after_start):
-    fire_mask = slice(n_start, (6 * hours_after_start + n_start - 1))
-    foehn_values = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_foehn']
-
-    new_features_dict = {}
-    # All foehn entries during the given period should be non-null
-    if foehn_values.isnull().sum() == 0:
-        foehn_minutes = foehn_values.sum() * 10
-        FF_mean = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_FF'].mean()
-        FFX_mean = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_FFX'].mean()
-
-        new_features_dict[f"foehn_minutes_during_{hours_after_start}_hours_after_start_of_fire"] = foehn_minutes
-        new_features_dict[f"FF_mean_during_{hours_after_start}_hours_after_start_of_fire"] = FF_mean
-        new_features_dict[f"FFX_mean_during_{hours_after_start}_hours_after_start_of_fire"] = FFX_mean
-    else:
-        new_features_dict[f"foehn_minutes_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
-        new_features_dict[f"FF_mean_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
-        new_features_dict[f"FFX_mean_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
-
-    return new_features_dict
-
 def add_control_variables(df):
+    """
+    Add control variables for fire regime, foehn type and decade.
+    :param df: Fire dataframe
+    :return: Fire dataframe with control variables
+    """
 
     ## Fire regimes
     df["fire_regime"] = np.NaN

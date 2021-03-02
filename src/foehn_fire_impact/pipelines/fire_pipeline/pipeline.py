@@ -1,5 +1,6 @@
 """
-Pipeline for the fire data
+Pipeline for the fire data. Cleanse the data, transform datetime, add missing coordinates, and map to closest
+weather observation station.
 """
 
 from kedro.pipeline import Pipeline, node

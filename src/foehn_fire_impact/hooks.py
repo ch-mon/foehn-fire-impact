@@ -28,7 +28,7 @@ class ProjectHooks:
             "fire_pipeline": fire_pipeline,
             "foehn_pipeline": foehn_pipeline,
             "foehn_fire_pipeline": foehn_fire_pipeline,
-            "__default__": fire_pipeline,
+            "__default__": fire_pipeline+foehn_pipeline+foehn_fire_pipeline,
         }
 
     @hook_impl

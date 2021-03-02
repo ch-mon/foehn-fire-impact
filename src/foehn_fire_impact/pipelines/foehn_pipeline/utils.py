@@ -2,7 +2,7 @@ import numpy as np
 
 
 def combine_east_west_stations(df, east_station, west_station, final_station):
-    '''
+    """
     Combine east and west station into one index with the following table.
 
     East | West | Desired outcome
@@ -28,12 +28,12 @@ def combine_east_west_stations(df, east_station, west_station, final_station):
     2    | 2    | 2
     -----------------------------
 
-    :param df:
-    :param east_station:
-    :param west_station:
-    :param final_station:
+    :param df: Foehn dataframe
+    :param east_station: Name of the Eastern station
+    :param west_station: Name of the Western station
+    :param final_station: Name of the final station
     :return:
-    '''
+    """
 
     # Create masks for each case
     foehn0_mask = (df[east_station] == 0.0) & (df[west_station] == 0.0)

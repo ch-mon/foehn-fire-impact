@@ -1,9 +1,4 @@
-# pylint: disable=invalid-name
-
 import logging
-from typing import Any, Dict
-
-import numpy as np
 import pandas as pd
 import os
 from .utils import *
@@ -15,12 +10,12 @@ def load_comprehensive_foehn_data(df_meteo_params, parameters) -> pd.DataFrame:
     Bring it into processable columns and perform some safety checks (e.g. no 3 or 6 hourly values anymore)
     :param df_meteo_params: Table with necessary translation between variable names
     :param parameters: Dict with filepath to data delivery
-    :return: Dataframe with all parameters and on a consistent 10-minute time axis.
+    :return: Dataframe with all parameters on a consistent 10-minute time axis.
     """
 
     meteo_param_mapping = dict(zip(df_meteo_params["PAR"].values, df_meteo_params["final_variable_name"].values))
 
-    # Read in North foehn data
+    # Read foehn data
     dict_of_dicts = {}
     for root, dirs, files in os.walk(parameters["foehn_data_path"]):
 
@@ -55,7 +50,7 @@ def load_comprehensive_foehn_data(df_meteo_params, parameters) -> pd.DataFrame:
 
             # Only allow values which have a spacing of 10 minutes (there are 3 and 6-hourly values in the dataset)
             ten_minute_mask = ((df["date"].shift(periods=(-1)) - df["date"]) == pd.Timedelta(minutes=10))
-            if (df.iloc[-1, 0] - df.iloc[-2, 0]) == pd.Timedelta(minutes=10): # Fix last entry of mask due to shift side effect
+            if (df.iloc[-1, 0] - df.iloc[-2, 0]) == pd.Timedelta(minutes=10):  # Fix last entry of mask due to shift side effect
                 ten_minute_mask.iloc[-1] = True
             df = df.loc[ten_minute_mask, :]
 
@@ -82,9 +77,9 @@ def load_comprehensive_foehn_data(df_meteo_params, parameters) -> pd.DataFrame:
 def load_older_north_foehn_data(parameters) -> pd.DataFrame:
     """
     Load an older data delivery from MeteoSwiss which includes north foehn data that is not included in the newer data delivery.
-    Their datawarhouse did not get filled with these values.
+    Their data-warehouse did not get filled with these values.
     :param parameters: Dict with filepath to data delivery
-    :return: Dataframe with all parameters and on a consistent 10-minute time axis.
+    :return: Dataframe with all old values on a consistent 10-minute time axis.
     """
     # Ensure a continuous dataframe
     df_final = pd.DataFrame(pd.date_range(start='1980-01-01 00:00', end='2019-12-31 23:59', freq="10min"), columns=["date"])
@@ -110,8 +105,8 @@ def load_older_north_foehn_data(parameters) -> pd.DataFrame:
 
 def merge_old_and_new_foehn_data(df_old, df_compr) -> pd.DataFrame:
     """
-    Merge the old north foehn data from Matteo with the new foehn data from MeteoSwiss.
-    Filter out the obvious wrong measurements.
+    Merge the old north foehn data with the new foehn data from MeteoSwiss.
+    Filter out the obviously wrong measurements.
     :param df_old: Old data delivery for north foehn data
     :param df_compr: Comprehensive second data delivery
     :return: Enriched dataframe which contains information from both data deliveries.
@@ -135,13 +130,13 @@ def merge_old_and_new_foehn_data(df_old, df_compr) -> pd.DataFrame:
     for col in df_compr.filter(regex="Z850"):
         df_compr.loc[df_compr[col] > 5000.0, col] = np.NaN
 
-    # Filter wind speed (everything over 150 km/h)
-    for col in df_compr.filter(regex="FF$"):
-        df_compr.loc[df_compr[col] > 150.0, col] = np.NaN
-
-    # Filter wind speed gusts (everything over 200 km/h)
-    for col in df_compr.filter(regex="FFX"):
-        df_compr.loc[df_compr[col] > 200.0, col] = np.NaN
+    # # Filter wind speed (everything over 150 km/h)
+    # for col in df_compr.filter(regex="FF$"):
+    #     df_compr.loc[df_compr[col] > 150.0, col] = np.NaN
+    #
+    # # Filter wind speed gusts (everything over 200 km/h)
+    # for col in df_compr.filter(regex="FFX"):
+    #     df_compr.loc[df_compr[col] > 200.0, col] = np.NaN
 
     return df_compr
 
