@@ -1,111 +1,48 @@
 # Foehn fire impact
+This project takes foehn wind and forest fire data in Switzerland of the past 40 years into account, cleanses and merges the data, and finally allows for investigation of the impact of foehn winds on forest fires. The project was originally generated with Dataiku but has been rebuilt with kedro (`Kedro 0.17.0`) for shareability, reproducibility and learning purposes. 
 
-## Overview
-This project takes past foehn windsand fire data within Switzerland into account, cleanses and merges the data, and finally allows for investigation of the impact of foehn winds onto forest fires in the past 40 years. The project was originally generated with Dataiku but has been rebuilt with Kedro (`Kedro 0.17.0`) for shareability, reproducibility and learning purposes.
+The whole project looks likes this (made with kedro viz):
+![Kedro Pipeline](kedro-pipeline.png "Project overview")
 
-Take a look at the [Kedro documentation](https://kedro.readthedocs.io) to get started.
+Essentially, there are three pipelines in this project: `fire_pipeline`, `foehn_pipeline`, and `foehn_fire_pipeline`. All of them can be found under `src/foehn_fire_impact/pipelines`.
 
-## How to install dependencies
+## Fire pipeline
+Pipeline for the fire data only. It cleanses the raw data, transform the datetime, adds some missing coordinates, and maps each fire to the closest weather observation station.
 
-Declare any dependencies in `src/requirements.txt` for `pip` installation and `src/environment.yml` for `conda` installation.
+## Foehn pipeline
+Pipeline to load and cleanse two data deliveries (each having a different structure) from MeteoSwiss containing important measurement variables (e.g., the temperature, wind speed and Duerr-Index) from all foehn measurement stations in Switzerland. This pipeline loads the data, performs some cleansing, ensures a consistent time axis, and merges both deliveries. The measurements cover the period 1981-2019 and can be used for a range of analyses. 
 
-To install them, run:
+## Foehn fire pipeline
+Pipeline which maps the before preprocessed fire and foehn data onto each other and adds some control variables (i.e., fire regime, foehn type, and decade). The resulting file (which is also included in the git-commit), is then analyzed in the notebook under `notebooks/data_exploration.ipynb`.
 
+# Getting started
+If you want to run the pipelines yourself, here you find the most important kedro commands. To set up everything, simply run
 ```
 kedro install
 ```
 
-## How to run Kedro
-
-You can run your Kedro project with:
-
+Now you can run everything, certain pipelines, or nodes via 
 ```
-kedro run
+kedro run # Runs everything
+kedro run --pipeline foehn_fire_pipeline # Runs the foehn_fire_pipeline pipeline only 
+kedro run --node cleanse_fire_data # Runs the cleanse_fire_data node only
+kedro run --from-nodes map_fires_to_foehn # Runs all nodes from the map_fires_to_foehn node (including the node itself)
 ```
 
-## How to test your Kedro project
+If you want to run the notebook mentioned above (or create a new one), simply start a notebook or jupyter-lab session via kedro. This adds some variables to the session during startup and lets you access the data easily:
+```
+kedro jupyter notebook
+kedro jupyter lab
+```
 
-Have a look at the file `src/tests/test_run.py` for instructions on how to write your tests. You can run your tests as follows:
-
+There are also some unit tests pre-written for certain functions, which you can execute via
 ```
 kedro test
 ```
 
-To configure the coverage threshold, look at the `.coveragerc` file.
-
-
-## Project dependencies
-
-To generate or update the dependency requirements for your project:
-
+You can visualize all pipelines via 
 ```
-kedro build-reqs
+kedro viz
 ```
 
-This will copy the contents of `src/requirements.txt` into a new file `src/requirements.in` which will be used as the source for `pip-compile`. You can see the output of the resolution by opening `src/requirements.txt`.
-
-After this, if you'd like to update your project requirements, please update `src/requirements.in` and re-run `kedro build-reqs`.
-
-[Further information about project dependencies](https://kedro.readthedocs.io/en/stable/04_kedro_project_setup/01_dependencies.html#project-specific-dependencies)
-
-## How to work with Kedro and notebooks
-
-> Note: Using `kedro jupyter` or `kedro ipython` to run your notebook provides these variables in scope: `context`, `catalog`, and `startup_error`.
-
-### Jupyter
-To use Jupyter notebooks in your Kedro project, you need to install Jupyter:
-
-```
-pip install jupyter
-```
-
-After installing Jupyter, you can start a local notebook server:
-
-```
-kedro jupyter notebook
-```
-
-### JupyterLab
-To use JupyterLab, you need to install it:
-
-```
-pip install jupyterlab
-```
-
-You can also start JupyterLab:
-
-```
-kedro jupyter lab
-```
-
-### IPython
-And if you want to run an IPython session:
-
-```
-kedro ipython
-```
-
-### How to convert notebook cells to nodes in a Kedro project
-You can move notebook code over into a Kedro project structure using a mixture of [cell tagging](https://jupyter-notebook.readthedocs.io/en/stable/changelog.html#cell-tags) and Kedro CLI commands.
-
-By adding the `node` tag to a cell and running the command below, the cell's source code will be copied over to a Python file within `src/<package_name>/nodes/`:
-
-```
-kedro jupyter convert <filepath_to_my_notebook>
-```
-> *Note:* The name of the Python file matches the name of the original notebook.
-
-Alternatively, you may want to transform all your notebooks in one go. Run the following command to convert all notebook files found in the project root directory and under any of its sub-folders:
-
-```
-kedro jupyter convert --all
-```
-
-### How to ignore notebook output cells in `git`
-To automatically strip out all output cell contents before committing to `git`, you can run `kedro activate-nbstripout`. This will add a hook in `.git/config` which will run `nbstripout` before anything is committed to `git`.
-
-> *Note:* Your output cells will be retained locally.
-
-## Package your Kedro project
-
-[Further information about building project documentation and packaging your project](https://kedro.readthedocs.io/en/stable/03_tutorial/05_package_a_project.html)
+Now you are pretty much set up. If you want to learn more, take a look at the [Kedro documentation](https://kedro.readthedocs.io) at this point.
