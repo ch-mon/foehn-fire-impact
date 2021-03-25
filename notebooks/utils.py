@@ -42,7 +42,7 @@ def test_multiple_bins_against_no_foehn(df, hours):
               )
 
 
-def test_binary_bins(df, hours, control_var="", categories=""):
+def test_binary_bins(df, hours, variable="after", control_var="", categories=""):
     """
     Run a statistical test for non-foehn vs. foehn fires for a given control variable.
     :param df: Fire dataframe
@@ -50,9 +50,15 @@ def test_binary_bins(df, hours, control_var="", categories=""):
     :param control_var: Variable as decade or fire-regime
     :param categories: Manifestations of the control variable
     """
+    
+    # Which aspect to look at
+    if variable=="after":
+        variable=f'foehn_minutes_during_{hours}_hours_after_start_of_fire'
+    elif variable=="before":
+        variable=f'foehn_minutes_{hours}_hour_before'
 
     # Create the binary non-foehn and foehn intervals
-    intervals = pd.cut(df[f'foehn_minutes_during_{hours}_hours_after_start_of_fire'], bins=[-0.001, 0.001, 60 * hours])
+    intervals = pd.cut(df[variable], bins=[-0.001, 0.001, 60 * hours])
 
     # Control whether a control variable is given
     if control_var:
@@ -148,17 +154,23 @@ def test_foehn_strength(df, hours, strength_var, bins):
 
 
 
-def plot_multiple_binned_burned_area_after_fire_start(df, hours, control_var=""):
+def plot_multiple_binned_burned_area_after_fire_start(df, hours, variable="after", control_var=""):
     """
     Plot multiple boxes for each of the six intervals and potentially separated by hue for control variables.
     :param df: Fire dataframe
     :param hours: Time period to consider
     :param control_var: Variable such as decade or fire-regime
     """
+    
+    # Which aspect to look at
+    if variable=="after":
+        variable=f'foehn_minutes_during_{hours}_hours_after_start_of_fire'
+    elif variable=="before":
+        variable=f'foehn_minutes_{hours}_hour_before'
 
     # Specify the bins to be plotted
     bins = [-0.001, 0.001] + [hours * 10 * i for i in range(1, 6 + 1)]
-    kwargs = dict(x=pd.cut(df[f'foehn_minutes_during_{hours}_hours_after_start_of_fire'], bins=bins),
+    kwargs = dict(x=pd.cut(df[variable], bins=bins),
                   y=df['total [ha]'],
                   color="tab:blue")
     if control_var:  # If control variable is specified
@@ -179,22 +191,28 @@ def plot_multiple_binned_burned_area_after_fire_start(df, hours, control_var="")
     save_figure(f"BoxplotBurnedAreaOverFoehnMinutesForFirst{hours}HoursAfterStart")
 
 
-def plot_binary_binned_burned_area_after_fire_start(df, hours, control_var=""):
+def plot_binary_binned_burned_area_after_fire_start(df, hours, variable="after", control_var=""):
     """
     Create binary non-foehn vs. foehn comparison plots (potentially for each control variable).
     :param df: Fire dataframe
     :param hours: Time period to consider
     :param control_var: Variable such as decade or fire-regime
     """
+    
+    # Which aspect to look at
+    if variable=="after":
+        variable=f'foehn_minutes_during_{hours}_hours_after_start_of_fire'
+    elif variable=="before":
+        variable=f'foehn_minutes_{hours}_hour_before'
 
     # Specify the bins to be plotted
     bins = [-0.001, 0.001, 60 * hours]
-    kwargs = dict(x=pd.cut(df[f'foehn_minutes_during_{hours}_hours_after_start_of_fire'], bins=bins),
+    kwargs = dict(x=pd.cut(df[variable], bins=bins),
                   y=df['total [ha]'],
                   color="tab:blue")
     if control_var:  # If control variable is specified
         kwargs.update(dict(x=df[control_var],
-                           hue=pd.cut(df[f'foehn_minutes_during_{hours}_hours_after_start_of_fire'], bins=bins)))
+                           hue=pd.cut(df[variable], bins=bins)))
 
     # Plot variable but label a bit differently depending on a control variable
     plt.figure()
@@ -300,3 +318,55 @@ def plot_binned_fire_count_before_fire_start_temperature(df, df_foehn, hours, st
     plt.xlabel("Foehn temperature increase [K]")
 
     save_figure(f'NormalizedFireCountOverTemperatureForThe{hours}HoursBeforeStart')
+    
+
+def plot_binned_burned_area_before_and_after_fire_start(df, hours_before, hours_after):
+    """
+    Create binary non-foehn vs. foehn comparison plots (potentially for each control variable).
+    :param df: Fire dataframe
+    :param hours: Time period to consider
+    """
+    
+    
+    mask = (df[f'foehn_minutes_{hours_before}_hour_before'] == 0) & (df[f'foehn_minutes_during_{hours_after}_hours_after_start_of_fire'] == 0)
+    df.loc[mask, "no-foehn"] = df.loc[mask, "total [ha]"]
+    print("No foehn: ", mask.sum())
+    mask = (df[f'foehn_minutes_{hours_before}_hour_before'] > 0)
+    df.loc[mask, "before-foehn"] = df.loc[mask, "total [ha]"]
+    print("Before foehn: ", mask.sum())
+    mask = (df[f'foehn_minutes_during_{hours_after}_hours_after_start_of_fire'] > 0)
+    df.loc[mask, "after-foehn"] = df.loc[mask, "total [ha]"]
+    print("After foehn: ", mask.sum())
+    mask = (df[f'foehn_minutes_{hours_before}_hour_before'] > 0) & (df[f'foehn_minutes_during_{hours_after}_hours_after_start_of_fire'] > 0)
+    df.loc[mask, "both-foehn"] = df.loc[mask, "total [ha]"]
+    print("Before and after foehn: ", mask.sum())
+    
+    df = df[["no-foehn", "before-foehn", "after-foehn", "both-foehn"]]
+    # Specify the bins to be plotted
+    kwargs = dict(x="variable",
+                  y="value",
+                  data=pd.melt(df).dropna(),
+                  color="tab:blue",
+                 )
+
+    # Plot variable but label a bit differently depending on a control variable
+    plt.figure()
+    g = sns.boxplot(**kwargs)
+
+    #if control_var:
+    #    L = plt.legend()
+    #    L.get_texts()[0].set_text('Non-foehn fires')
+    #    L.get_texts()[1].set_text('Foehn fires')
+    #else:
+    #    xticks, xlabels = plt.xticks()
+    #    xlabels = [label.get_text() for label in xlabels]
+    #    xlabels[0] = "Non-foehn fires"
+    #    xlabels[1] = "Foehn fires"
+    #    plt.xticks(xticks, xlabels)
+
+    plt.ylabel("Burned area [ha]")
+    plt.xlabel("")
+    g.set_yscale("log")
+    plt.grid(True, which="both", ls="--", c='gray', alpha=0.5)
+
+    save_figure(f"BurnedAreaOverFoehnMinutes{hours_before}HoursBeforeAnd{hours_after}AfterStart")
