@@ -4,3 +4,4 @@
 station_radius: 20000 # in metres = 20 km
 foehn_data_path: "/net/bio/dyn_soft/datasets/foehn.swissmetnet/" # location of the large foehn delivery from MeteoSwiss
 older_north_foehn_data_path: "/home/chmony/Documents/north_foehn_data/historic_data_until_2017_matteo/" # from a data delivery which does contain data the other dumps does not
+rain_data_path: "/net/atmos/data/MeteoCH_gridded/RhiresD" # path to rain data

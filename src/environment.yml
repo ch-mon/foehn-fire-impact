@@ -18,3 +18,5 @@ dependencies:
     - kedro
     - kedro-viz
     - openpyxl
+
+# Need to install "dypy" manually for fire map plotting (due to broken installation command)

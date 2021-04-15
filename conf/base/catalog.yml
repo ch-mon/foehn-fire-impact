@@ -74,3 +74,10 @@ foehn_stations:
 foehn_parameters:
   type: pandas.CSVDataSet
   filepath: data/01_raw/meteorological_parameters.csv
+
+# Rain data
+rain_data:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/rain_data.csv
+  load_args:
+    parse_dates: ["date"]
