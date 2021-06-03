@@ -152,4 +152,7 @@ def prepare_foehn_data_for_forest_fire_merge(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[df[col] == 1.0, col] = 0.0
         df.loc[df[col] == 2.0, col] = 1.0
 
+    # Keep only relevant foehn parameters
+    df = df.filter(regex="(date|_foehn|_FF|_TT|_UU)")
+
     return df
