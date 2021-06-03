@@ -130,13 +130,9 @@ def merge_old_and_new_foehn_data(df_old, df_compr) -> pd.DataFrame:
     for col in df_compr.filter(regex="Z850"):
         df_compr.loc[df_compr[col] > 5000.0, col] = np.NaN
 
-    # # Filter wind speed (everything over 150 km/h)
-    # for col in df_compr.filter(regex="FF$"):
-    #     df_compr.loc[df_compr[col] > 150.0, col] = np.NaN
-    #
-    # # Filter wind speed gusts (everything over 200 km/h)
-    # for col in df_compr.filter(regex="FFX"):
-    #     df_compr.loc[df_compr[col] > 200.0, col] = np.NaN
+    # Filter wind speed and wind speed gusts(everything over 150 km/h - highest ever measured foehn speed)
+    for col in df_compr.filter(regex="_FF"):
+        df_compr.loc[(df_compr[col] < 0) | (df_compr[col] > 150.0), col] = np.NaN
 
     return df_compr
 
