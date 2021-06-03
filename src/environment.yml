@@ -1,6 +1,5 @@
-name: foehnfirecorr
+name: foehnfirecorrplot
 channels:
-  - conda-forge
   - defaults
 dependencies:
   - python==3.8
@@ -12,11 +11,15 @@ dependencies:
   - seaborn
   - geopy
   - pip
-  - cookiecutter
   - xlrd
+  - cartopy
+#  - geopandas
   - pip:
     - kedro
     - kedro-viz
     - openpyxl
+    - geopandas
+#    - xgboost
+#    - causalnex
 
 # Need to install "dypy" manually for fire map plotting (due to broken installation command)
