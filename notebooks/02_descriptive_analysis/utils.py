@@ -313,13 +313,13 @@ def plot_binned_fire_count_before_fire_start(df, df_foehn, hours, stations_in_re
     """
 
     # Create plot in multiple and binary bin form
-    for bin_amount in [[-1,240, 480, 720, 960, 1200, 1440], [-0.001, 0.001, hours * 60]]:
+    for bin_amount in [[-1,1, 240, 480, 720, 960, 1200, 1440], [-0.001, 0.001, hours * 60]]:
         df_binned = df.groupby(pd.cut(df[f'foehn_minutes_{hours}_hour_before'], bins=bin_amount)).count()
     
         # Loop over all stations and get general occurrence of a certain foehn length at each station
         foehn_minutes_in_interval = np.zeros(len(df_binned.index))
         for station in stations_in_region:
-            foehn_minutes_during_timeframe = df_foehn[f"{station}_foehn"].rolling(6 * hours).sum().loc[(df_foehn["date"].dt.hour == 12) & (df_foehn["date"].dt.minute == 0) & (df_foehn[f"{station}_rainavg"] <=10)].reset_index(drop=True) * 10
+            foehn_minutes_during_timeframe = df_foehn[f"{station}_foehn"].rolling(6 * hours).sum().loc[(df_foehn["date"].dt.hour == 8) & (df_foehn["date"].dt.minute == 0) & (df_foehn[f"{station}_rainavg"] <=10)].reset_index(drop=True) * 10
             
             foehn_minutes_in_interval += np.array([((i.left < foehn_minutes_during_timeframe) &
                                                     (foehn_minutes_during_timeframe <= i.right)).sum() for i in
@@ -340,9 +340,10 @@ def plot_binned_fire_count_before_fire_start(df, df_foehn, hours, stations_in_re
         plt.xlabel("")
         xticks, xlabels = plt.xticks()
         xlabels = [label.get_text() for label in xlabels]
-        if len(bin_amount) == 7:  # In multiple bin case
+        if len(bin_amount) == 8:  # In multiple bin case
             plt.xlabel("Foehn minutes")
-            xlabels[0] = "[0.0" + xlabels[0][3:]
+            xlabels[0] = "Non-foehn"
+            xlabels[1] = "(0.0," + xlabels[1][3:]
             figname = f"NormalizedFireCountOverFoehnMinutesForThe{hours}HoursBeforeStart"
         else:  # In the binary bin case
             xlabels[0] = "Non-foehn presence"
