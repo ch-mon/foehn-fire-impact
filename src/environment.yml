@@ -13,6 +13,7 @@ dependencies:
   - pip
   - xlrd
   - cartopy
+  - netcdf4
 #  - geopandas
   - pip:
     - kedro
