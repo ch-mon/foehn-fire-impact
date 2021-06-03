@@ -67,11 +67,11 @@ def transform_datetime(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[mask_hour, "end_date_max"] = df.loc[mask_hour, "end date (solar time)"].apply(lambda dt: dt.replace(minute=59))
 
     # Calculate minimum and maximum duration
-    df["duration_min"] = (df["end_date_min"] - df["start_date_max"]).dt.seconds/60
-    df["duration_max"] = (df["end_date_max"] - df["start_date_min"]).dt.seconds/60
+    df["duration_min"] = (df["end_date_min"] - df["start_date_max"]).dt.total_seconds()/3600
+    df["duration_max"] = (df["end_date_max"] - df["start_date_min"]).dt.total_seconds()/3600
 
-    # Drop durations which are negative
-    df = df.loc[~((df["duration_min"] <= 0.0) | (df["duration_max"] <= 0.0)), :]
+    # Drop durations which are negative or too short (or a year long)
+    df = df.loc[~((df["duration_min"] < 0.25) | (df["duration_max"] < 0.25) | (df["duration_min"] > 8000.0)), :]
 
     logging.debug(len(df.index))
     return df
