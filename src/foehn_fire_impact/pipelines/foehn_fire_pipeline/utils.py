@@ -62,11 +62,14 @@ def sum_foehn_minutes_during_start_period_of_fire(fire, df_foehn, n_start, hours
         # Select only entries which show foehn occurrence.
         foehn_minutes = foehn_values.sum() * 10
         FF_mean = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_FF'].mean()
-        FFX_mean = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_FFX'].mean()
+        FFX_values = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_FFX']
 
         new_features_dict[f"foehn_minutes_during_{hours_after_start}_hours_after_start_of_fire"] = foehn_minutes
         new_features_dict[f"FF_mean_during_{hours_after_start}_hours_after_start_of_fire"] = FF_mean
-        new_features_dict[f"FFX_mean_during_{hours_after_start}_hours_after_start_of_fire"] = FFX_mean
+        new_features_dict[f"FFX_mean_during_{hours_after_start}_hours_after_start_of_fire"] = FFX_values.mean()
+        new_features_dict[f"FFX_q75_during_{hours_after_start}_hours_after_start_of_fire"] = FFX_values.quantile(0.75)
+        new_features_dict[f"FFX_q90_during_{hours_after_start}_hours_after_start_of_fire"] = FFX_values.quantile(0.90)
+        new_features_dict[f"FFX_max_during_{hours_after_start}_hours_after_start_of_fire"] = FFX_values.max()
     else:  # If not all values are known, set to NaN
         new_features_dict[f"foehn_minutes_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
         new_features_dict[f"FF_mean_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
