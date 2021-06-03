@@ -57,6 +57,9 @@ def add_control_variables(df):
             df["cause"] != "unknown") & (df["cause"] != "lightning")
     df.loc[mask, "fire_regime"] = "Summer anthropogenic"
 
+    # Remove summer natural fires since those cannot be influenced by foehn during ignition (due to lightning)
+    df = df.loc[df["fire_regime"] != "Summer natural", :]
+
     ## South or North foehn feature
     north_foehn_stations = ["LUG", "OTL", "MAG", "COM", "GRO", "SBO", "PIO", "CEV", "ROB", "VIO"]
     south_foehn_stations = set(df["closest_station"].values) - set(north_foehn_stations)
