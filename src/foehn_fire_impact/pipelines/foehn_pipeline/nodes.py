@@ -137,7 +137,7 @@ def merge_old_and_new_foehn_data(df_old, df_compr) -> pd.DataFrame:
     return df_compr
 
 
-def prepare_foehn_data_for_forest_fire_merge(df: pd.DataFrame) -> pd.DataFrame:
+def prepare_foehn_data_for_forest_fire_merge(df: pd.DataFrame, regions) -> pd.DataFrame:
     """
     Prepare data to be merged with the cleansed fire data.
     Before this step, all data can be used also for other analysis.
@@ -154,5 +154,10 @@ def prepare_foehn_data_for_forest_fire_merge(df: pd.DataFrame) -> pd.DataFrame:
 
     # Keep only relevant foehn parameters
     df = df.filter(regex="(date|_foehn|_FF|_TT|_UU)")
+
+    # Keep only relevant stations
+    stations = regions["southern_switzerland"] + regions["northern_switzerland"]
+    regex_str = "(date|" + "_|".join(stations) + "_)"
+    df = df.filter(regex=regex_str)
 
     return df

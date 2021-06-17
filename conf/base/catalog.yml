@@ -28,6 +28,13 @@ fire_data_cleansed_stations:
   load_args:
     parse_dates: ["start_date_min"]
 
+fire_data_with_closest_station_WSLmapped:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/fire_data_with_closest_station_WSLmapped.csv
+  load_args:
+    parse_dates: ["start_date_min"]
+
+
 # Foehn data
 raw_foehn_data:
   type: pandas.CSVDataSet
@@ -70,6 +77,10 @@ fire_data_with_foehn_and_control_variables:
 foehn_stations:
   type: pandas.CSVDataSet
   filepath: data/01_raw/foehn_stations_switzerland.csv
+
+foehn_stations_WSLmapped:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/foehn_stations_reduced.csv
   
 foehn_parameters:
   type: pandas.CSVDataSet
@@ -81,3 +92,11 @@ rain_data:
   filepath: data/03_primary/rain_data.csv
   load_args:
     parse_dates: ["date"]
+
+# Fire indices data
+fire_indices_data:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/fire_indices_data.csv
+  load_args:
+    parse_dates: [ "date" ]
+    low_memory: False

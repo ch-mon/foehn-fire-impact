@@ -30,7 +30,7 @@ def create_pipeline(**kwargs):
             ),
             node(
                 prepare_foehn_data_for_forest_fire_merge,
-                "foehn_data_cleansed",
+                ["foehn_data_cleansed", "params:regions"],
                 "foehn_data_prepared",
                 name="prepare_foehn_data_for_forest_fire_merge"
             )

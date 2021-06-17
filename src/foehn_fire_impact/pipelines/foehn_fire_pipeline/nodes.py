@@ -3,16 +3,22 @@ import pandas as pd
 from .utils import *
 
 
-def map_fires_to_foehn(df_fires, df_foehn):
+def map_fires_to_foehn(df_fires, df_foehn, regions):
     """
     Map all forest fires to to corresponding time period in foehn dataframe and check for foehn occurrence and strength.
     :param df_fires: Fire dataframe
     :param df_foehn: Foehn dataframe
     :return: Fire dataframe with mapped foehn values
     """
-    rows_list = []
+
+    # Only allow fires which are in the stations defined in the configs.
+    stations = []
+    for reg, sta in regions.items():
+        stations.extend(sta)
+    df_fires = df_fires.loc[df_fires["abbreviation"].isin(stations), :].reset_index(drop=True)
 
     # Loop over all fires
+    rows_list = []
     for index, fire in df_fires.iterrows():
         new_features_dict = {}
 
@@ -25,6 +31,7 @@ def map_fires_to_foehn(df_fires, df_foehn):
         new_features_dict.update(sum_foehn_minutes_before_fire(fire, df_foehn, n_start, hours_before_start=48))
 
         # Foehn minutes during starting hours of the fire
+        new_features_dict.update(sum_foehn_minutes_during_start_period_of_fire(fire, df_foehn, n_start, hours_after_start=2))
         new_features_dict.update(sum_foehn_minutes_during_start_period_of_fire(fire, df_foehn, n_start, hours_after_start=6))
         new_features_dict.update(sum_foehn_minutes_during_start_period_of_fire(fire, df_foehn, n_start, hours_after_start=12))
 
@@ -58,18 +65,18 @@ def add_control_variables(df):
     df.loc[mask, "fire_regime"] = "Summer anthropogenic"
 
     # Remove summer natural fires since those cannot be influenced by foehn during ignition (due to lightning)
-    df = df.loc[df["fire_regime"] != "Summer natural", :]
+    #df = df.loc[df["fire_regime"] != "Summer natural", :]
 
     ## South or North foehn feature
     north_foehn_stations = ["LUG", "OTL", "MAG", "COM", "GRO", "SBO", "PIO", "CEV", "ROB", "VIO"]
-    south_foehn_stations = set(df["closest_station"].values) - set(north_foehn_stations)
+    south_foehn_stations = set(df["abbreviation"].values) - set(north_foehn_stations)
 
-    df["potential_foehn_species"] = np.NaN
-    df.loc[df["closest_station"].isin(north_foehn_stations), "potential_foehn_species"] = "North foehn"
-    df.loc[df["closest_station"].isin(south_foehn_stations), "potential_foehn_species"] = "South foehn"
+    #df["potential_foehn_species"] = np.NaN
+    df.loc[df["abbreviation"].isin(north_foehn_stations), "potential_foehn_species"] = "North foehn"
+    df.loc[df["abbreviation"].isin(south_foehn_stations), "potential_foehn_species"] = "South foehn"
 
     ## Decade feature
-    df["decade"] = ""
+    #df["decade"] = ""
     for year in range(1990, 2020 + 1, 10):
         decade_mask = (year - 10 <= df["start_date_min"].dt.year) & (df["start_date_min"].dt.year < year)
         df.loc[decade_mask, "decade"] = f"[{year - 10}, {year - 1}]"

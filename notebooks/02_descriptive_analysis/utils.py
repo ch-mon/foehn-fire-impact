@@ -163,7 +163,7 @@ def test_foehn_strength(df, hours, strength_var, bins, foehn_bool=True):
                   np.round(burned_values_2.median() / burned_values_1.median(), 3))
 
 
-def test_foehn_strength_foehn_nofoehn(df, hours, strength_var, bins):
+def test_foehn_strength_foehn_nofoehn(df, hours, strength_var, bins, quantile="mean"):
     """
     Test different foehn strength bins against each other
     :param df: Fire dataframe
@@ -173,7 +173,7 @@ def test_foehn_strength_foehn_nofoehn(df, hours, strength_var, bins):
     """
 
     # Define column of interest
-    strength_col = f"{strength_var}_mean_during_{hours}_hours_after_start_of_fire"
+    strength_col = f"{strength_var}_{quantile}_during_{hours}_hours_after_start_of_fire"
     plt.figure()
 
 
@@ -189,8 +189,8 @@ def test_foehn_strength_foehn_nofoehn(df, hours, strength_var, bins):
 
 
     # Reduce dataframe to fires which show foehn activity
-    print("Amount of foehn-influenced fires: ", (df[f'foehn_minutes_during_{hours}_hours_after_start_of_fire'] > 0).sum())
-    print("Amount of non-foehn-influenced fires: ", (df[f'foehn_minutes_during_{hours}_hours_after_start_of_fire'] == 0).sum())
+    print(f"({hours}h) Amount of foehn-influenced fires: ", (df[f'foehn_minutes_during_{hours}_hours_after_start_of_fire'] > 0).sum())
+    print(f"({hours}h) Amount of non-foehn-influenced fires: ", (df[f'foehn_minutes_during_{hours}_hours_after_start_of_fire'] == 0).sum())
 
 
     df.loc[(df[f'foehn_minutes_during_{hours}_hours_after_start_of_fire'] > 0), "type"] = "foehn"
@@ -216,9 +216,10 @@ def test_foehn_strength_foehn_nofoehn(df, hours, strength_var, bins):
         burned_values_1 = df.loc[(df["strength_bins"] == interval) & (df["type"] == "foehn"), "total [ha]"]
         burned_values_2 = df.loc[(df["strength_bins"] == interval) & (df["type"] == "nofoehn"), "total [ha]"]
         # Print results of Wilcoxon test and median increase between different foehn strength bins
-        print(f"({hours}h) {interval} (foehnfires: {len(burned_values_1)}), (nofoehnfires: {len(burned_values_2)}) \t",
-              np.round(ranksums(burned_values_1, burned_values_2).pvalue, 6))#, "\t",
-              #np.round(burned_values_2.median() / burned_values_1.median(), 3))
+        if len(burned_values_1)>9 and len(burned_values_2)>9:
+            print(f"({hours}h) {interval} (foehnfires: {len(burned_values_1)}), (nofoehnfires: {len(burned_values_2)}) \t",
+                  np.round(ranksums(burned_values_1, burned_values_2).pvalue, 6))#, "\t",
+                  #np.round(burned_values_2.median() / burned_values_1.median(), 3))
 
 
 def plot_multiple_binned_burned_area_after_fire_start(df, hours, variable="after", control_var=""):
@@ -319,7 +320,7 @@ def plot_binned_fire_count_before_fire_start(df, df_foehn, hours, stations_in_re
         # Loop over all stations and get general occurrence of a certain foehn length at each station
         foehn_minutes_in_interval = np.zeros(len(df_binned.index))
         for station in stations_in_region:
-            foehn_minutes_during_timeframe = df_foehn[f"{station}_foehn"].rolling(6 * hours).sum().loc[(df_foehn["date"].dt.hour == 8) & (df_foehn["date"].dt.minute == 0) & (df_foehn[f"{station}_rainavg"] <=10)].reset_index(drop=True) * 10
+            foehn_minutes_during_timeframe = df_foehn[f"{station}_foehn"].rolling(6 * hours).sum().loc[(df_foehn["date"].dt.hour == 7) & (df_foehn["date"].dt.minute == 0) & (df_foehn[f"{station}_rainavg"] <=10)].reset_index(drop=True) * 10
             
             foehn_minutes_in_interval += np.array([((i.left < foehn_minutes_during_timeframe) &
                                                     (foehn_minutes_during_timeframe <= i.right)).sum() for i in
@@ -353,6 +354,60 @@ def plot_binned_fire_count_before_fire_start(df, df_foehn, hours, stations_in_re
         plt.xticks(xticks, xlabels)
         save_figure(figname)
 
+
+def plot_binned_fire_count_before_fire_start_single_station(df, df_foehn, hours, stations_in_region):
+    """
+    Plot the count of fires normalized by the general occurrence of this foehn length for a specified time period
+    :param df: Fire dataframe
+    :param df_foehn: Foehn dataframe
+    :param hours:  Time period to consider (24 or 48 hours)
+    """
+
+    # Create plot in multiple and binary bin form
+    for bins in [[-1, 1, 240, 480, 720, 960, 1200, 1440], [-0.001, 0.001, hours * 60]]:
+
+        plt.figure(figsize=(16*2,9*2))
+        plt.rcParams.update({'font.size': 10})
+        # Loop over all stations and get general occurrence of a certain foehn length at each station
+        foehn_minutes_in_interval = np.zeros(len(bins)-1)
+        for st_nr, station in enumerate(stations_in_region):
+            df_station = df.loc[df["closest_station"] == station, :]
+            df_binned = df_station.groupby(pd.cut(df_station[f'foehn_minutes_{hours}_hour_before'], bins=bins)).count()
+
+            foehn_minutes_during_timeframe = df_foehn[f"{station}_foehn"].rolling(6 * hours).sum().loc[
+                                                 (df_foehn["date"].dt.hour == 7) & (df_foehn["date"].dt.minute == 0) & (
+                                                             df_foehn[f"{station}_rainavg"] <= 10)].reset_index(drop=True)*10
+
+            foehn_minutes_in_interval += np.array([((i.left < foehn_minutes_during_timeframe) &
+                                                    (foehn_minutes_during_timeframe <= i.right)).sum() for i in
+                                                   df_binned.index])
+
+            df_binned["foehn_minutes_in_interval"] = foehn_minutes_in_interval
+            # print(df_binned["foehn_minutes_in_interval"])
+            # print(df_binned['total [ha]'])
+            df_binned["normalized_count"] = df_binned['total [ha]'] / df_binned["foehn_minutes_in_interval"]
+
+            # Plot figure (normalize y-axis by first bin) and make labels pretty
+            plt.subplot(int(round(len(stations_in_region) / 3,0)), 3, st_nr+1, )
+            sns.barplot(x=df_binned.index, y=df_binned["normalized_count"],  # / df_binned["normalized_count"][0],
+                        color="tab:blue")
+            plt.ylabel("Normalized count of fires", fontsize=14)
+            plt.xlabel("")
+            plt.title(station, fontsize=14)
+            xticks, xlabels = plt.xticks(fontsize=10)
+            xlabels = [label.get_text() for label in xlabels]
+            if len(bins) == 8:  # In multiple bin case
+                #plt.xlabel("Foehn minutes")
+                xlabels[0] = "Non-foehn"
+                xlabels[1] = "(0.0," + xlabels[1][3:]
+                figname = f"NormalizedFireCountOverFoehnMinutesForThe{hours}HoursBeforeStart"
+            else:  # In the binary bin case
+                xlabels[0] = "Non-foehn presence"
+                xlabels[1] = "Foehn presence"
+                figname = f"NonFoehnVsFoehnOverFoehnMinutesForThe{hours}HoursBeforeStart"
+
+            plt.xticks(xticks, xlabels)
+            #save_figure(figname)
 
 def plot_binned_fire_count_before_fire_start_temperature(df, df_foehn, hours, stations):
     """

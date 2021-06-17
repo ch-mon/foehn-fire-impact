@@ -1,7 +1,22 @@
 # Parameters for the example pipeline. Feel free to delete these once you
 # remove the example pipeline from hooks.py and the example nodes in
 # `src/pipelines/`
-station_radius: 20000 # in metres = 20 km
-foehn_data_path: "/net/bio/dyn_soft/datasets/foehn.swissmetnet/" # location of the large foehn delivery from MeteoSwiss
-older_north_foehn_data_path: "/home/chmony/Documents/north_foehn_data/historic_data_until_2017_matteo/" # from a data delivery which does contain data the other dumps does not
-rain_data_path: "/net/atmos/data/MeteoCH_gridded/RhiresD" # path to rain data
+
+# Radius around each station in metres (= 20 km here)
+station_radius: 20000
+
+# Filepath of the large foehn delivery from MeteoSwiss
+foehn_data_path: "/net/bio/dyn_soft/datasets/foehn.swissmetnet/"
+
+# Filepath to data delivery which does contain data the other dumps does not
+older_north_foehn_data_path: "/net/litho/atmosdyn2/chmony/develop/foehn-fire-impact/data/01_raw/north_foehn_data/"
+
+# Filepath to rain data
+rain_data_path: "/net/atmos/data/MeteoCH_gridded/RhiresD"
+
+# Regions
+regions:
+  # Removed stations NS: "EVI", "AND", "RAG", "MER", "EIN", "ABO", "GIH", "ENG", "ELM", "EBK", "ARH", "GUT", "OBR", "HOE", "VAD", "SMA",
+  northern_switzerland: ["VIS", "MVE", "SIO", "AIG", "CHU", "INT", "ALT", "LUZ", "DAV", "GLA", "WAE", "STG"]
+  # Removed stations SS: "SBO", "GRO", "CEV", "COM", "VIO", "SBE"
+  southern_switzerland: ["LUG", "MAG", "OTL", "PIO", "ROB"]

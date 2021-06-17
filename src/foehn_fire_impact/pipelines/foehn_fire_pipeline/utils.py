@@ -10,10 +10,11 @@ def sum_foehn_minutes_before_fire(fire, df_foehn, n_start, hours_before_start):
     :param hours_before_start: 24 or 48 hours
     :return: Dict: Foehn minutes, TT mean, UU mean for the specific fire and considered time period
     """
+    mapped_station = fire["abbreviation"]
 
     # Get weather station values in foehn dataframe
     fire_mask = slice((n_start - 6 * hours_before_start), (n_start - 1))
-    foehn_values = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_foehn']
+    foehn_values = df_foehn.loc[fire_mask, f'{mapped_station}_foehn']
 
     new_features_dict = {}
     if foehn_values.isnull().sum() == 0:  # Only allow fires where all weather station values are known
@@ -26,18 +27,18 @@ def sum_foehn_minutes_before_fire(fire, df_foehn, n_start, hours_before_start):
         else:
             # Subtract the temperature and humidity for values which do not show foehn occurrence to distill foehn
             # temperature increase and humidity decrease
-            TT_mean = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_TT'].loc[foehn_values == 1.0].mean() - \
-                      df_foehn.loc[fire_mask, f'{fire["closest_station"]}_TT'].loc[foehn_values == 0.0].mean()
-            UU_mean = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_UU'].loc[foehn_values == 1.0].mean() - \
-                      df_foehn.loc[fire_mask, f'{fire["closest_station"]}_UU'].loc[foehn_values == 0.0].mean()
+            TT_mean = df_foehn.loc[fire_mask, f'{mapped_station}_TT'].loc[foehn_values == 1.0].mean() - \
+                      df_foehn.loc[fire_mask, f'{mapped_station}_TT'].loc[foehn_values == 0.0].mean()
+            UU_mean = df_foehn.loc[fire_mask, f'{mapped_station}_UU'].loc[foehn_values == 1.0].mean() - \
+                      df_foehn.loc[fire_mask, f'{mapped_station}_UU'].loc[foehn_values == 0.0].mean()
 
         new_features_dict[f"foehn_minutes_{hours_before_start}_hour_before"] = foehn_minutes
-        new_features_dict[f"TT_mean_{hours_before_start}_hour_before"] = TT_mean
-        new_features_dict[f"UU_mean_{hours_before_start}_hour_before"] = UU_mean
-    else:  # If not all values are known, set to NaN
-        new_features_dict[f"foehn_minutes_{hours_before_start}_hour_before"] = np.NaN
-        new_features_dict[f"TT_mean_{hours_before_start}_hour_before"] = np.NaN
-        new_features_dict[f"UU_mean_{hours_before_start}_hour_before"] = np.NaN
+        # new_features_dict[f"foehn_mean_TT_{hours_before_start}_hour_before"] = TT_mean
+        # new_features_dict[f"foehn_mean_UU_{hours_before_start}_hour_before"] = UU_mean
+    # else:  # If not all values are known, set to NaN
+    #     new_features_dict[f"foehn_minutes_{hours_before_start}_hour_before"] = np.NaN
+    #     new_features_dict[f"TT_mean_{hours_before_start}_hour_before"] = np.NaN
+    #     new_features_dict[f"UU_mean_{hours_before_start}_hour_before"] = np.NaN
 
     return new_features_dict
 
@@ -52,27 +53,28 @@ def sum_foehn_minutes_during_start_period_of_fire(fire, df_foehn, n_start, hours
     :return: Dict: Foehn minutes, TT mean, UU mean for the specific fire and considered time period
     """
 
+    mapped_station = fire["abbreviation"]
+
     # Get values in foehn dataframe
     fire_mask = slice(n_start, (6 * hours_after_start + n_start - 1))
-    foehn_values = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_foehn']
+    foehn_values = df_foehn.loc[fire_mask, f'{mapped_station}_foehn']
 
     new_features_dict = {}
     if foehn_values.isnull().sum() == 0:  # Only allow fires where all weather station values are known
         # Sum all foehn values for occurrence and strength.
         # Select only entries which show foehn occurrence.
         foehn_minutes = foehn_values.sum() * 10
-        FF_mean = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_FF'].mean()
-        FFX_values = df_foehn.loc[fire_mask, f'{fire["closest_station"]}_FFX']
+        FF_mean = df_foehn.loc[fire_mask, f'{mapped_station}_FF'].mean()
+        FFX_values = df_foehn.loc[fire_mask, f'{mapped_station}_FFX']
 
         new_features_dict[f"foehn_minutes_during_{hours_after_start}_hours_after_start_of_fire"] = foehn_minutes
         new_features_dict[f"FF_mean_during_{hours_after_start}_hours_after_start_of_fire"] = FF_mean
         new_features_dict[f"FFX_mean_during_{hours_after_start}_hours_after_start_of_fire"] = FFX_values.mean()
         new_features_dict[f"FFX_q75_during_{hours_after_start}_hours_after_start_of_fire"] = FFX_values.quantile(0.75)
         new_features_dict[f"FFX_q90_during_{hours_after_start}_hours_after_start_of_fire"] = FFX_values.quantile(0.90)
-        new_features_dict[f"FFX_max_during_{hours_after_start}_hours_after_start_of_fire"] = FFX_values.max()
-    else:  # If not all values are known, set to NaN
-        new_features_dict[f"foehn_minutes_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
-        new_features_dict[f"FF_mean_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
-        new_features_dict[f"FFX_mean_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
+    # else:  # If not all values are known, set to NaN
+    #     new_features_dict[f"foehn_minutes_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
+    #     new_features_dict[f"FF_mean_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
+    #     new_features_dict[f"FFX_mean_during_{hours_after_start}_hours_after_start_of_fire"] = np.NaN
 
     return new_features_dict

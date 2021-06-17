@@ -13,10 +13,10 @@ def cleanse_fire_data(df: pd.DataFrame) -> pd.DataFrame:
     :return: Cleansed fire dataframe
     """
     # Drop superfluous columns
-    df.drop(columns=["ID cause reliability", "ID Cause", "ID exposition", "ID accuracy coordinates",
-                          "ID accuracy end date", "ID accuracy start date", "ID current municipality",
-                          "ID municipality", "definition", "ID definition", "ID fire"],
-                 inplace=True)
+    # df.drop(columns=["ID cause reliability", "ID Cause", "ID exposition", "ID accuracy coordinates",
+    #                       "ID accuracy end date", "ID accuracy start date", "ID current municipality",
+    #                       "ID municipality", "definition", "ID definition", "ID fire"],
+    #              inplace=True)
 
     # Drop rows where there are missing values in the date and accuracy variables
     df.dropna(subset=["start date (solar time)", "end date (solar time)", "accuracy start date", "accuracy end date"],
@@ -123,7 +123,7 @@ def calculate_closest_station(df_fire, df_stations, parameters):
     df_stations = df_stations.loc[df_stations["abbreviation"] != "GUE", :].reset_index(drop=True)
 
     # Greedily search through all distances and find the minimum
-    df_fire["closest_station"] = ""
+    df_fire["abbreviation"] = ""
     df_fire["closest_station_distance"] = 0.0
     for i in range(len(df_fire.index)):
         distances = calc_distance(df_fire.loc[i, "coordinates_x"], df_fire.loc[i, "coordinates_y"],
@@ -133,13 +133,13 @@ def calculate_closest_station(df_fire, df_stations, parameters):
         dist = distances.min()
         # Only map fires which are in a given radius around one of the weather stations
         if dist < parameters["station_radius"]:
-            df_fire.loc[i, "closest_station"] = df_stations.loc[n, "abbreviation"]
+            df_fire.loc[i, "abbreviation"] = df_stations.loc[n, "abbreviation"]
             df_fire.loc[i, "closest_station_distance"] = dist
         else:
-            df_fire.loc[i, "closest_station"] = np.nan
+            df_fire.loc[i, "abbreviation"] = np.nan
             df_fire.loc[i, "closest_station_distance"] = np.nan
 
     # Drop all rows where the fire could not mapped to a station
-    df_fire = df_fire.loc[df_fire["closest_station"].notnull(), :]
+    df_fire = df_fire.loc[df_fire["abbreviation"].notnull(), :]
     logging.debug(f"{len(df_fire)} fires in dataset")
     return df_fire
