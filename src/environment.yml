@@ -20,6 +20,9 @@ dependencies:
     - kedro-viz
     - openpyxl
     - geopandas
+    - mlflow
+    - pytest
+    - pytest-cov
 #    - xgboost
 #    - causalnex
 

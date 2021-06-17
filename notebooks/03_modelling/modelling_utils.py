@@ -23,14 +23,21 @@ def evaluate_regression(y_true, y_pred):
     plt.plot([min_val, max_val], [min_val, max_val], "r-")
 
     # Regression metrics
-    print('(MAE) Mean absolute error: ', round(mean_absolute_error(y_true, y_pred), 4))
-    print('(MSE) Mean squared error: ', round(mean_squared_error(y_true, y_pred), 4))
-    print('(RMSE) Root mean squared error: ', round(np.sqrt(mean_squared_error(y_true, y_pred)),4))  # Gives a relatively high weight to large errors (compared to MAE)
+    digits = 4
+    mae = round(mean_absolute_error(y_true, y_pred), digits)
+    mse = round(mean_squared_error(y_true, y_pred), digits)
+    rmse = round(np.sqrt(mse), digits)
+    r2 = round(r2_score(y_true, y_pred), digits)
+    
+    print('(MAE) Mean absolute error: ', mae)
+    #print('(MSE) Mean squared error: ', mse)
+    print('(RMSE) Root mean squared error: ', rmse)  # Gives a relatively high weight to large errors (compared to MAE)
     #print('(RMSLE) Root mean squared log error: ', round(mean_squared_log_error(y_true, y_pred),4))  # Punishes underprediction harder, robuster towards outliers, also considers a relative error
     #print('(MAPE) Mean absolute percentage error: ', round(mean_absolute_percentage_error(y_true, y_pred), 4))  # sensitive to relative errors, scale-invariant
     #print('(MedAE) Median absolute error: ', round(median_absolute_error(y_true, y_pred), 4))  # Robust to outliers
-    print('(R2) R2-score: ', round(r2_score(y_true, y_pred), 4))
+    print('(R2) R2-score: ', r2)
     # print('(EV) Explained_variance: ', round(explained_variance_score(y_true, y_pred), 4))  # Equivalent to R2 if mean error/residuals == 0, otherwise bias in residuals
+    return mae, rmse, r2
 
 def evaluate_binary_classification(y_true, y_proba, threshold_optimized=None):
     """
@@ -89,3 +96,15 @@ def evaluate_binary_classification(y_true, y_proba, threshold_optimized=None):
     print("F1: ", f1_score(y_true, y_pred))
 
     return threshold_optimized
+
+def calc_AUCbg(y_true, y_proba):
+    thresholds = np.linspace(0,1,100)
+    positives = (y_true == 1)
+    
+    for c in thresholds:
+        y_pred = int(c < y_proba)
+        TP = (y_true[positives] == y_pred[positives]).sum()
+        
+        (~y_pred).sum()/len(y_proba)
+        
+    return AUCbg
