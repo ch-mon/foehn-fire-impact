@@ -31,7 +31,7 @@ class ProjectHooks:
             "foehn_pipeline": foehn_pipeline,
             "foehn_fire_pipeline": foehn_fire_pipeline,
             "rain_pipeline": rain_pipeline,
-            "__default__": fire_pipeline+foehn_pipeline+foehn_fire_pipeline,
+            "__default__": fire_pipeline+foehn_pipeline+foehn_fire_pipeline +rain_pipeline,
         }
 
     @hook_impl

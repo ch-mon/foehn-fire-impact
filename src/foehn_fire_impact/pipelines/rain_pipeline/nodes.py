@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
+import logging
+
 import pandas as pd
 import numpy as np
 import netCDF4 as nc
 from scipy.spatial import cKDTree
 import os
 from .utils import *
+from kedro.framework.session import get_current_session
 
 
 def make_rain_dataset(df_stations, params):
@@ -78,4 +81,62 @@ def make_rain_dataset(df_stations, params):
 
     return df_rain
 
+
+def load_fire_indices_data(df_stations, regions):
+    project_path = get_current_session().load_context().project_path
+
+    # Define mapping between stations in our file and the data delivery
+    station_mapping = {"Bad Ragaz": "Bad_Ragaz",
+                       "Güttingen": "Guttingen",
+                       "Hörnli": "Hornli",
+                       "Locarno / Monti": "Locarno_Monti",
+                       "S. Bernardino": "S_Bernardino",
+                       "St. Gallen": "St_Gallen",
+                       "Wädenswil": "Wadenswil",
+                       "Zürich / Fluntern": "Zurich_Fluntern"}
+
+    # Create mapping from abbreviation to fullname (map above values, leave others as they are)
+    abbrev_dict = dict(zip(df_stations["abbreviation"], df_stations["name"].map(station_mapping).fillna(df_stations["name"])))
+
+    # Read all data from relevant stations into a dataframe
+    df_raw = pd.DataFrame()
+    for region, stations in regions.items():
+        for station in stations:
+
+            # Read the 19XX-2012 files
+            try:
+                filename = os.path.join(project_path, "data", "01_raw", "fireindice_1981_2012", f"{abbrev_dict[station]}_RESULT.csv")
+                df_temp = pd.read_csv(filename)
+                df_temp["abbreviation"] = station
+                df_temp["region"] = region
+                df_raw = pd.concat([df_raw, df_temp], axis=0)
+                logging.info(f"(1980-2012) Joined {station}")
+            except FileNotFoundError:
+                logging.info(f"(1980-2012) {station} does not exist")
+
+            # Read the 2000-2018 files
+            try:
+                filename = os.path.join(project_path, "data", "01_raw", "fireindice_2000_2018", f"{station}_RESULT.csv")
+                df_temp = pd.read_csv(filename)
+                df_temp["abbreviation"] = station
+                df_temp["region"] = region
+                df_raw = pd.concat([df_raw, df_temp], axis=0)
+                logging.info(f"(2000-2018) Joined {station} ")
+            except FileNotFoundError:
+                logging.info(f"(2000-2018) {station} does not exist")
+
+    # Convert date string to data
+    df_raw["DateYYYYMMDD"] = pd.to_datetime(df_raw["DateYYYYMMDD"], format='%Y%m%d')
+
+    # Ensure a consistent time axis from beginning 1981 until end 2018
+    time_axis = pd.DataFrame({"DateYYYYMMDD": pd.date_range(start="1981-01-01", end="2018-12-31", freq="1D")})
+
+    # Join fire indice data onto time axis and remove duplicates due to overlapping datasets (keep value from first dataset)
+    df_full = pd.merge(time_axis, df_raw, on="DateYYYYMMDD", how="left")
+    df_full = df_full.loc[~df_full.duplicated(subset=["DateYYYYMMDD", "abbreviation"], keep="first"), :]
+    df_full = df_full.rename(columns={"DateYYYYMMDD": "date"})
+
+    df_full = df_full.drop(columns=["Date", "year", "month", "day"])
+
+    return df_full
 

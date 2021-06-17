@@ -12,5 +12,10 @@ def create_pipeline(**kwargs):
              ["foehn_stations", "parameters"],
              "rain_data",
              name="make_rain_dataset"
+             ),
+        node(load_fire_indices_data,
+             ["foehn_stations", "params:regions"],
+             "fire_indices_data",
+             name="load_fire_indices_data"
              )
     ])
