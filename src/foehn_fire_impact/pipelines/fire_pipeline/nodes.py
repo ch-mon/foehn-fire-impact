@@ -71,6 +71,7 @@ def transform_datetime(df: pd.DataFrame) -> pd.DataFrame:
     df["duration_max"] = (df["end_date_max"] - df["start_date_min"]).dt.total_seconds()/3600
 
     # Drop durations which are negative or too short (or a year long)
+    print(df.loc[df["duration_min"] > 24*30*2.0, :])
     df = df.loc[~((df["duration_min"] < 0.25) | (df["duration_max"] < 0.25) | (df["duration_min"] > 8000.0)), :]
 
     logging.debug(len(df.index))

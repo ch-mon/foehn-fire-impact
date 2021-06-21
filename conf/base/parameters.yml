@@ -16,7 +16,7 @@ rain_data_path: "/net/atmos/data/MeteoCH_gridded/RhiresD"
 
 # Regions
 regions:
-  # Removed stations NS: "EVI", "AND", "RAG", "MER", "EIN", "ABO", "GIH", "ENG", "ELM", "EBK", "ARH", "GUT", "OBR", "HOE", "VAD", "SMA",
-  northern_switzerland: ["VIS", "MVE", "SIO", "AIG", "CHU", "INT", "ALT", "LUZ", "DAV", "GLA", "WAE", "STG"]
+  # Removed stations NS: "EVI", "AND", "RAG", "MER", "EIN", "ABO", "GIH", "ENG", "ELM", "EBK", "ARH", "GUT", "OBR", "HOE", "VAD", "SMA", "LUZ", "DAV", "WAE", "SIO",
+  northern_switzerland: ["VIS", "MVE", "AIG", "CHU", "INT", "ALT", "GLA", "STG"]
   # Removed stations SS: "SBO", "GRO", "CEV", "COM", "VIO", "SBE"
   southern_switzerland: ["LUG", "MAG", "OTL", "PIO", "ROB"]

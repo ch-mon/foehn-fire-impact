@@ -65,7 +65,7 @@ def add_control_variables(df):
     df.loc[mask, "fire_regime"] = "Summer anthropogenic"
 
     # Remove summer natural fires since those cannot be influenced by foehn during ignition (due to lightning)
-    #df = df.loc[df["fire_regime"] != "Summer natural", :]
+    df = df.loc[df["fire_regime"] != "Summer natural", :].copy()
 
     ## South or North foehn feature
     north_foehn_stations = ["LUG", "OTL", "MAG", "COM", "GRO", "SBO", "PIO", "CEV", "ROB", "VIO"]
@@ -80,5 +80,9 @@ def add_control_variables(df):
     for year in range(1990, 2020 + 1, 10):
         decade_mask = (year - 10 <= df["start_date_min"].dt.year) & (df["start_date_min"].dt.year < year)
         df.loc[decade_mask, "decade"] = f"[{year - 10}, {year - 1}]"
+
+    # Remove fires in valleys with very little foehn
+    df = df.loc[~((df["abbreviation"] == "ROB") & (df["longitude"] < 9.8)), :]
+    df = df.loc[~((df["abbreviation"] == "CHU") & (df["longitude"] < 9.35)), :]
 
     return df

@@ -364,18 +364,29 @@ def plot_binned_fire_count_before_fire_start_single_station(df, df_foehn, hours,
     """
 
     # Create plot in multiple and binary bin form
-    for bins in [[-1, 1, 240, 480, 720, 960, 1200, 1440], [-0.001, 0.001, hours * 60]]:
+    for bins in [[-1, 1, 240, 480, 720, 960, 1200, 1440], [-0.001, 0.001, 60, hours * 60]]:
 
         plt.figure(figsize=(16*2,9*2))
         plt.rcParams.update({'font.size': 10})
         # Loop over all stations and get general occurrence of a certain foehn length at each station
-        foehn_minutes_in_interval = np.zeros(len(bins)-1)
+        
         for st_nr, station in enumerate(stations_in_region):
-            df_station = df.loc[df["closest_station"] == station, :]
+            
+            print(station)
+            df_station = df.loc[df["abbreviation"] == station, :]
             df_binned = df_station.groupby(pd.cut(df_station[f'foehn_minutes_{hours}_hour_before'], bins=bins)).count()
-
+            foehn_minutes_in_interval = np.zeros(len(bins)-1)
+            
+            if len(bins) == 4:
+                df_binned = df_binned.loc[df_binned.index != pd.Interval(0.001, 60), :].copy()
+                df_binned.index = df_binned.index.categories[0:(2+1):2]
+    
+                foehn_minutes_in_interval = np.zeros(len(bins)-2)
+                
+                
+            
             foehn_minutes_during_timeframe = df_foehn[f"{station}_foehn"].rolling(6 * hours).sum().loc[
-                                                 (df_foehn["date"].dt.hour == 7) & (df_foehn["date"].dt.minute == 0) & (
+                                                 (df_foehn["date"].dt.hour == 14) & (df_foehn["date"].dt.minute == 0) & (
                                                              df_foehn[f"{station}_rainavg"] <= 10)].reset_index(drop=True)*10
 
             foehn_minutes_in_interval += np.array([((i.left < foehn_minutes_during_timeframe) &
@@ -383,17 +394,20 @@ def plot_binned_fire_count_before_fire_start_single_station(df, df_foehn, hours,
                                                    df_binned.index])
 
             df_binned["foehn_minutes_in_interval"] = foehn_minutes_in_interval
-            # print(df_binned["foehn_minutes_in_interval"])
-            # print(df_binned['total [ha]'])
+            
+            #print(df_binned["foehn_minutes_in_interval"])
+            #print(df_binned['total [ha]'])
             df_binned["normalized_count"] = df_binned['total [ha]'] / df_binned["foehn_minutes_in_interval"]
-
             # Plot figure (normalize y-axis by first bin) and make labels pretty
-            plt.subplot(int(round(len(stations_in_region) / 3,0)), 3, st_nr+1, )
+            ax = plt.subplot(int(round(len(stations_in_region) / 3,0)), 3, st_nr+1, )
             sns.barplot(x=df_binned.index, y=df_binned["normalized_count"],  # / df_binned["normalized_count"][0],
                         color="tab:blue")
+            for index, row in df_binned.reset_index(drop=True).iterrows():
+                ax.text(index, row["normalized_count"], int(row["total [ha]"]), color='black', ha="center", fontsize=14)
+                ax.text(index, row["normalized_count"], "\n" + str(int(row["foehn_minutes_in_interval"])), color='white', ha="center",va="top", fontsize=14)
             plt.ylabel("Normalized count of fires", fontsize=14)
             plt.xlabel("")
-            plt.title(station, fontsize=14)
+            plt.title(station + f" (N_fires={df_binned['total [ha]'].sum()})", fontsize=14)
             xticks, xlabels = plt.xticks(fontsize=10)
             xlabels = [label.get_text() for label in xlabels]
             if len(bins) == 8:  # In multiple bin case
