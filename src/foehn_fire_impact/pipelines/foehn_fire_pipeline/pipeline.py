@@ -14,7 +14,7 @@ def create_pipeline(**kwargs):
              name="map_fires_to_foehn"
              ),
         node(add_control_variables,
-             "fire_data_with_foehn",
+             ["fire_data_with_foehn", "fire_cause", "params:regions"],
              "fire_data_with_foehn_and_control_variables",
              name="add_control_variables"
              )

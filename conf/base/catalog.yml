@@ -86,6 +86,10 @@ foehn_parameters:
   type: pandas.CSVDataSet
   filepath: data/01_raw/meteorological_parameters.csv
 
+fire_cause:
+  type: pandas.CSVDataSet
+  filepath: data/04_feature/fixed_lightning_fires.csv
+
 # Rain data
 rain_data:
   type: pandas.CSVDataSet
