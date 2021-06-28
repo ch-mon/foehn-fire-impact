@@ -4,6 +4,7 @@ channels:
 dependencies:
   - python==3.8
   - jupyterlab
+  - ipython==7.10.0 # Due to iPython issue
   - pandas
   - scipy
   - scikit-learn
@@ -23,6 +24,7 @@ dependencies:
     - mlflow
     - pytest
     - pytest-cov
+    - plotly
 #    - xgboost
 #    - causalnex
 
