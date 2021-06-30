@@ -104,3 +104,11 @@ fire_indices_data:
   load_args:
     parse_dates: [ "date" ]
     low_memory: False
+
+# Topography data
+topography_data:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/topography_data/DHM200.xyz
+  load_args:
+    names: ["y", "x", "z"]
+    delimiter: " "
