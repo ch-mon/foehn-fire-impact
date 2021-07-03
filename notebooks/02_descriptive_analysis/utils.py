@@ -78,9 +78,10 @@ def test_binary_bins(df, hours, variable="after", control_var="", categories="")
         foehn_values = df.loc[intervals == pd.Interval(0.001, 60 * hours), "total [ha]"]
 
         # Print results of Wilcoxon test and median increase between non-foehn and foehn bin
-        print(f"({hours}h) non-foehn vs. foehn ",
-              ranksums(no_foehn_values, foehn_values).pvalue, "\t",
-              np.round(foehn_values.median() / no_foehn_values.median(), 2))
+        pvalue = ranksums(no_foehn_values, foehn_values).pvalue
+        median_increase_factor = np.round(foehn_values.median() / no_foehn_values.median(), 2)
+
+        return pvalue, median_increase_factor
 
 
 def test_foehn_within_variable(df, hours, control_var, categories):
@@ -415,7 +416,7 @@ def plot_binned_fire_count_before_fire_start_single_station(df, df_foehn, hours,
             #save_figure(figname)
 
 
-def plot_binned_fire_count_before_fire_start_single_station_daily(df, df_foehn, hours, stations_in_region):
+def plot_binned_fire_count_before_fire_start_single_station_daily(df, df_foehn, hours, stations):
     """
     Plot the count of fires normalized by the general occurrence of this foehn length for a specified time period
     :param df: Fire dataframe
@@ -432,7 +433,7 @@ def plot_binned_fire_count_before_fire_start_single_station_daily(df, df_foehn, 
         plt.rcParams.update({'font.size': 10})
         # Loop over all stations and get general occurrence of a certain foehn length at each station
 
-        for st_nr, station in enumerate(stations_in_region):
+        for st_nr, station in enumerate(stations):
 
             print(station)
             df_station = df.loc[df["abbreviation"] == station, :]
@@ -460,7 +461,7 @@ def plot_binned_fire_count_before_fire_start_single_station_daily(df, df_foehn, 
             # print(df_binned['total [ha]'])
             df_binned["normalized_count"] = df_binned['total [ha]'] / df_binned["foehn_minutes_in_interval"]
             # Plot figure (normalize y-axis by first bin) and make labels pretty
-            ax = plt.subplot(int(round(len(stations_in_region) / 3, 0)), 3, st_nr + 1, )
+            ax = plt.subplot(int(round(len(stations) / 3, 0)), 3, st_nr + 1, )
             sns.barplot(x=df_binned.index, y=df_binned["normalized_count"],  # / df_binned["normalized_count"][0],
                         color="tab:blue")
             for index, row in df_binned.reset_index(drop=True).iterrows():
