@@ -2,7 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import pandas as pd
+from plotly.subplots import make_subplots
+from plotly import graph_objects as go
 from scipy.stats import ranksums
+import datetime
 
 
 def save_figure(fig_name, save_figures_bool=False):
@@ -356,135 +359,185 @@ def plot_binned_fire_count_before_fire_start(df, df_foehn, hours, stations_in_re
         save_figure(figname)
 
 
-def plot_binned_fire_count_before_fire_start_single_station(df, df_foehn, hours, stations_in_region):
+# noinspection PyUnresolvedReferences,PyTypeChecker
+def plot_fire_count_over_foehn_days(df_fires, df_foehn, stations, bins, hours=24):
     """
-    Plot the count of fires normalized by the general occurrence of this foehn length for a specified time period
-    :param df: Fire dataframe
+    Plot the count of fires normalized by the general occurrence foehn days for a specific foehn duration
+    :param df_fires: Fire dataframe
     :param df_foehn: Foehn dataframe
-    :param hours:  Time period to consider (24 or 48 hours)
+    :param stations: List of stations to plot
+    :param bins: Bin boundaries for the foehn intervals
+    :param hours:  Time period to consider (24 hours)
     """
 
-    # Create plot in multiple and binary bin form
-    for bins in [[-1, 1, 240, 480, 720, 960, 1200, 1440], [-0.001, 60, hours * 60]]:
+    # For easier readability and to ensure that count data later is correct
+    df_fires["fire_occurrence"] = 1
 
-        plt.figure(figsize=(16*2,9*2))
-        plt.rcParams.update({'font.size': 10})
-        # Loop over all stations and get general occurrence of a certain foehn length at each station
-        
-        for st_nr, station in enumerate(stations_in_region):
-            
-            print(station)
-            df_station = df.loc[df["abbreviation"] == station, :]
-            df_binned = df_station.groupby(pd.cut(df_station[f'foehn_minutes_{hours}_hour_before'], bins=bins)).count()
-            foehn_minutes_in_interval = np.zeros(len(bins)-1)
-            
-            foehn_minutes_during_timeframe = df_foehn[f"{station}_foehn"].rolling(6 * hours).sum().loc[
-                                                 (df_foehn["date"].dt.hour == 14) & (df_foehn["date"].dt.minute == 0)].reset_index(drop=True)*10
+    # Make list of pd.Intervals for foehn minutes
+    intervals = [pd.Interval(bins[n], bins[n + 1]) for n in range(len(bins) - 1)]
 
-            foehn_minutes_in_interval += np.array([((i.left < foehn_minutes_during_timeframe) &
-                                                    (foehn_minutes_during_timeframe <= i.right)).sum() for i in
-                                                   df_binned.index])
+    # Make Facet Plot figure
+    fig = make_subplots(rows=int(np.ceil(len(stations) / 3)), cols=3, subplot_titles=stations)
 
-            df_binned["foehn_minutes_in_interval"] = foehn_minutes_in_interval
-            
-            #print(df_binned["foehn_minutes_in_interval"])
-            #print(df_binned['total [ha]'])
-            df_binned["normalized_count"] = df_binned['total [ha]'] / df_binned["foehn_minutes_in_interval"]
-            # Plot figure (normalize y-axis by first bin) and make labels pretty
-            ax = plt.subplot(int(round(len(stations_in_region) / 3,0))+1, 3, st_nr+1, )
-            sns.barplot(x=df_binned.index, y=df_binned["normalized_count"],  # / df_binned["normalized_count"][0],
-                        color="tab:blue")
-            for index, row in df_binned.reset_index(drop=True).iterrows():
-                ax.text(index, row["normalized_count"], int(row["total [ha]"]), color='black', ha="center", fontsize=14)
-                ax.text(index, row["normalized_count"], "\n" + str(int(row["foehn_minutes_in_interval"])), color='white', ha="center",va="top", fontsize=14)
-            plt.ylabel("Normalized count of fires", fontsize=14)
-            plt.xlabel("")
-            plt.title(station + f" (N_fires={df_binned['total [ha]'].sum()})", fontsize=14)
-            xticks, xlabels = plt.xticks(fontsize=10)
-            xlabels = [label.get_text() for label in xlabels]
-            if len(bins) == 8:  # In multiple bin case
-                #plt.xlabel("Foehn minutes")
-                xlabels[0] = "Non-foehn"
-                xlabels[1] = "(0.0," + xlabels[1][3:]
-                figname = f"NormalizedFireCountOverFoehnMinutesForThe{hours}HoursBeforeStart"
-            else:  # In the binary bin case
-                xlabels[0] = "Non-foehn presence"
-                xlabels[1] = "Foehn presence"
-                figname = f"NonFoehnVsFoehnOverFoehnMinutesForThe{hours}HoursBeforeStart"
+    # Get general occurrence of foehn for a daily window for all stations
+    df_foehn_day = df_foehn.filter(regex="_foehn").rolling(6 * hours).sum()*10
+    df_foehn_day = pd.concat([df_foehn_day, df_foehn.filter(regex="_rainavg")], axis=1)
 
-            plt.xticks(xticks, xlabels)
-            #save_figure(figname)
+    # Filter for one time in the day to get consecutive days (needs to overlap with rain dataframe)
+    df_foehn_day = df_foehn_day.loc[df_foehn["date"].dt.time == datetime.time(14, 0), :].reset_index(drop=True)
+
+    # Loop over all stations
+    for st_nr, station in enumerate(stations):
+        # Col and row coordinates for Facet Plot
+        fig_kwargs = dict(col=(st_nr % 3) + 1, row=int(np.ceil((st_nr + 1) / 3)))
+
+        # Filter fires at station
+        df_station = df_fires.loc[df_fires["abbreviation"] == station, [f'foehn_minutes_{hours}_hour_before', "fire_occurrence"]].reset_index(drop=True)
+        df_foehn_station = df_foehn_day[[f"{station}_foehn", f"{station}_rainavg"]]
+
+        # Get fire occurrence for each interval
+        fires_per_interval = df_station.groupby(pd.cut(df_station[f'foehn_minutes_{hours}_hour_before'], bins=bins)).count()["fire_occurrence"].values
+
+        # Get foehn days with certain foehn length for each interval
+        foehn_days_per_interval = np.array(
+            [((i.left < df_foehn_station[f"{station}_foehn"]) &
+              (df_foehn_station[f"{station}_foehn"] <= i.right) &
+              (df_foehn_station[f"{station}_rainavg"] < 10)  # Ensure that rain days are excluded from analysis
+             ).sum() for i in intervals]
+        )
+
+        # Calculate relative occurrence of fires and foehn days per interval
+        fires_per_foehn = fires_per_interval / foehn_days_per_interval
+
+        # Plot results
+        fig.add_trace(
+            go.Bar(
+                x=["Non-foehn"] + [str(i) for i in intervals[1:]], y=fires_per_foehn,
+                name="#(fires|foehn)", showlegend=False, opacity=0.75, marker_color="#1f77b4",
+                hovertemplate='Rel. fire occurrence: %{y:.2f} %{customdata}',
+                customdata=[f"<br>Fires: {fires_per_interval[i]} " +
+                            f"<br>Foehn days: {foehn_days_per_interval[i]}" for i in range(len(intervals))]
+            ),
+            **fig_kwargs
+        )
+
+        # Set title for sub-figure
+        fig.layout.annotations[st_nr].update(text=station + f" (N_fires={int(fires_per_interval.sum())})")
+
+        # Add annotations for fire and foehn day amounts
+        for i, row in enumerate(intervals):
+            fig.add_annotation(x=i, y=fires_per_foehn[i], **fig_kwargs,
+                               text=int(fires_per_interval[i]),
+                               showarrow=False,
+                               font={"color": "orange"},
+                               yshift=10)
+            fig.add_annotation(x=i, y=fires_per_foehn[i], **fig_kwargs,
+                               text=int(foehn_days_per_interval[i]),
+                               showarrow=False,
+                               font={"color": "green"},
+                               yshift=-10)
+
+    # Set some global figure properties
+    fig.update_layout(height=400 * int(np.ceil(len(stations) / 3)))
+    fig.update_yaxes(title="Fires per foehn day")
+    fig.show()
 
 
-def plot_binned_fire_count_before_fire_start_single_station_daily(df, df_foehn, hours, stations):
+# noinspection PyTypeChecker,PyUnresolvedReferences
+def plot_fire_day_count_over_foehn_days(df_fires, df_foehn, stations, bins, hours=24):
     """
-    Plot the count of fires normalized by the general occurrence of this foehn length for a specified time period
-    :param df: Fire dataframe
+    Plot the count of fire days which showed prior foehn presence normalized by the general occurrence foehn days for a specific foehn duration
+    :param df_fires: Fire dataframe
     :param df_foehn: Foehn dataframe
-    :param hours:  Time period to consider (24 or 48 hours)
+    :param stations: List of stations to plot
+    :param bins: Bin boundaries for the foehn intervals
+    :param hours:  Time period to consider (24 hours)
     """
 
-    # Create plot in multiple and binary bin form
-    for bins in [[-1, 1, 240, 480, 720, 960, 1200, 1440], [-0.001, 0.001, 60, hours * 60]]:
+    # Shift fires so that a new day "begins" at 14pm (peak of fire occurrence)
+    df_fires["date"] = (df_fires["start_date_min"] - pd.Timedelta("14h")).dt.date.astype(np.datetime64)
 
-        intervals = [pd.Interval(bins[n], bins[n+1]) for n in range(len(bins)-1)]
+    # Define a fire day if at least one fire occurs at a station on a day
+    df_fires = df_fires.drop_duplicates(subset=["date", "abbreviation"]).reset_index(drop=True)
+    df_fires["fire_day"] = 1
 
-        plt.figure(figsize=(16 * 2, 9 * 2))
-        plt.rcParams.update({'font.size': 10})
-        # Loop over all stations and get general occurrence of a certain foehn length at each station
+    # Make list of pd.Intervals for foehn minutes
+    intervals = [pd.Interval(bins[n], bins[n+1]) for n in range(len(bins)-1)]
 
-        for st_nr, station in enumerate(stations):
+    # Make Facet Plot figure
+    fig = make_subplots(rows=int(np.ceil(len(stations) / 3)), cols=3, subplot_titles=stations)
 
-            print(station)
-            df_station = df.loc[df["abbreviation"] == station, :]
-            foehn_minutes_in_interval = np.zeros(len(bins) - 1)
+    # Get general occurrence of foehn for a daily window for all stations
+    df_foehn_day = df_foehn.filter(regex="_foehn").rolling(6 * hours).sum()*10
+    df_foehn_day = pd.concat([df_foehn_day, df_foehn.filter(regex="_rainavg")], axis=1)
+    df_foehn_day["date"] = df_foehn["date"].dt.date.astype(np.datetime64)
 
-            if len(bins) == 4:
-                df_binned = df_binned.loc[df_binned.index != pd.Interval(0.001, 60), :].copy()
-                df_binned.index = df_binned.index.categories[0:(2 + 1):2]
+    # Filter for one time in the day to get consecutive days (needs to overlap with rain dataframe)
+    df_foehn_day = df_foehn_day.loc[df_foehn["date"].dt.time == datetime.time(14, 0), :].reset_index(drop=True)
 
-                foehn_minutes_in_interval = np.zeros(len(bins) - 2)
+    # Loop over all stations
+    for st_nr, station in enumerate(stations):
+        # Col and row coordinates for Facet Plot
+        fig_kwargs = dict(col=(st_nr%3)+1, row=int(np.ceil((st_nr+1)/3)))
 
-            foehn_minutes_during_timeframe = df_foehn[f"{station}_foehn"].rolling(6 * hours).sum().loc[
-                                                 (df_foehn["date"].dt.hour == 14) & (
-                                                             df_foehn["date"].dt.minute == 0) & (
-                                                         df_foehn[f"{station}_rainavg"] <= 10)].reset_index(
-                drop=True) * 10
+        # Filter fires at station
+        df_station = df_fires.loc[df_fires["abbreviation"] == station, ["date", "fire_day"]].reset_index(drop=True)
+        df_foehn_station = df_foehn_day[["date", f"{station}_foehn", f"{station}_rainavg"]]
 
-            foehn_minutes_in_interval += np.array([((i.left < foehn_minutes_during_timeframe) &
-                                                    (foehn_minutes_during_timeframe <= i.right)).sum() for i in
-                                                   intervals])
+        # Merge foehn values and days with fire occurrence
+        df_foehn_fire = pd.merge(df_foehn_station, df_station, on="date", how="left")
 
-            df_binned["foehn_minutes_in_interval"] = foehn_minutes_in_interval
+        # Count foehn days for each interval
+        foehn_days_per_interval = np.array(
+            [((i.left < df_foehn_fire[f"{station}_foehn"]) &
+              (df_foehn_fire[f"{station}_foehn"] <= i.right) &
+              (df_foehn_fire[f"{station}_rainavg"] < 10)  # Ensure that rain days are excluded from analysis
+             ).sum() for i in intervals]
+        )
 
-            # print(df_binned["foehn_minutes_in_interval"])
-            # print(df_binned['total [ha]'])
-            df_binned["normalized_count"] = df_binned['total [ha]'] / df_binned["foehn_minutes_in_interval"]
-            # Plot figure (normalize y-axis by first bin) and make labels pretty
-            ax = plt.subplot(int(round(len(stations) / 3, 0)), 3, st_nr + 1, )
-            sns.barplot(x=df_binned.index, y=df_binned["normalized_count"],  # / df_binned["normalized_count"][0],
-                        color="tab:blue")
-            for index, row in df_binned.reset_index(drop=True).iterrows():
-                ax.text(index, row["normalized_count"], int(row["total [ha]"]), color='black', ha="center", fontsize=14)
-                ax.text(index, row["normalized_count"], "\n" + str(int(row["foehn_minutes_in_interval"])),
-                        color='white', ha="center", va="top", fontsize=14)
-            plt.ylabel("Normalized count of fires", fontsize=14)
-            plt.xlabel("")
-            plt.title(station + f" (N_fires={df_binned['total [ha]'].sum()})", fontsize=14)
-            xticks, xlabels = plt.xticks(fontsize=10)
-            xlabels = [label.get_text() for label in xlabels]
-            if len(bins) == 8:  # In multiple bin case
-                # plt.xlabel("Foehn minutes")
-                xlabels[0] = "Non-foehn"
-                xlabels[1] = "(0.0," + xlabels[1][3:]
-                figname = f"NormalizedFireCountOverFoehnMinutesForThe{hours}HoursBeforeStart"
-            else:  # In the binary bin case
-                xlabels[0] = "Non-foehn presence"
-                xlabels[1] = "Foehn presence"
-                figname = f"NonFoehnVsFoehnOverFoehnMinutesForThe{hours}HoursBeforeStart"
+        # Count foehn days which showed fire the day after for each interval
+        foehn_and_fire_days_per_interval = np.array(
+            [((i.left < df_foehn_fire[f"{station}_foehn"]) &
+              (df_foehn_fire[f"{station}_foehn"] <= i.right) &
+              (df_foehn_fire[f"{station}_rainavg"] < 10) &  # Ensure that rain days are excluded from analysis
+              (df_foehn_fire["fire_day"] == 1)).sum() for i in intervals]
+        )
 
-            plt.xticks(xticks, xlabels)
-            # save_figure(figname)
+        # Calculate relative occurrence of foehn and fires
+        rel_fire_days_per_interval = foehn_and_fire_days_per_interval / foehn_days_per_interval
+
+        # Plot results
+        fig.add_trace(
+            go.Bar(
+                x=["Non-foehn"] + [str(i) for i in intervals[1:]], y=rel_fire_days_per_interval,
+                name="P(fire=1|foehn)", showlegend=False, opacity=0.75, marker_color="#1f77b4",
+                hovertemplate='Rel. fire day occurrence: %{y:.2f} %{customdata}',
+                customdata=[f"<br>Fire days: {foehn_and_fire_days_per_interval[i]} " +
+                            f"<br>Foehn days: {foehn_days_per_interval[i]}" for i in range(len(intervals))]
+            ),
+            **fig_kwargs
+        )
+
+        # Set title for sub-figure
+        fig.layout.annotations[st_nr].update(text=station + f" (N_fire_days={int(foehn_and_fire_days_per_interval.sum())})")
+
+        # Add annotations for fire and foehn day amounts
+        for i, row in enumerate(intervals):
+            fig.add_annotation(x=i, y=rel_fire_days_per_interval[i], **fig_kwargs,
+                               text=int(foehn_and_fire_days_per_interval[i]),
+                               showarrow=False,
+                               font={"color": "orange"},
+                               yshift=10)
+            fig.add_annotation(x=i, y=rel_fire_days_per_interval[i], **fig_kwargs,
+                               text=int(foehn_days_per_interval[i]),
+                               showarrow=False,
+                               font={"color": "green"},
+                               yshift=-10)
+
+    # Set some global figure properties
+    fig.update_layout(height=400*int(np.ceil(len(stations) / 3)))
+    fig.update_yaxes(title="Fire occurrence on days after foehn")
+    fig.show()
 
 def plot_binned_fire_count_before_fire_start_temperature(df, df_foehn, hours, stations):
     """
