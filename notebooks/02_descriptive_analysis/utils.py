@@ -360,13 +360,14 @@ def plot_binned_fire_count_before_fire_start(df, df_foehn, hours, stations_in_re
 
 
 # noinspection PyUnresolvedReferences,PyTypeChecker
-def plot_fire_count_over_foehn_days(df_fires, df_foehn, stations, bins, hours=24):
+def plot_fire_count_over_foehn_days(df_fires, df_foehn, stations, bins, day_start_time, hours=24):
     """
     Plot the count of fires normalized by the general occurrence foehn days for a specific foehn duration
     :param df_fires: Fire dataframe
     :param df_foehn: Foehn dataframe
     :param stations: List of stations to plot
     :param bins: Bin boundaries for the foehn intervals
+    :param day_start_time: Start time of a "new" day
     :param hours:  Time period to consider (24 hours)
     """
 
@@ -384,7 +385,7 @@ def plot_fire_count_over_foehn_days(df_fires, df_foehn, stations, bins, hours=24
     df_foehn_day = pd.concat([df_foehn_day, df_foehn.filter(regex="_rainavg")], axis=1)
 
     # Filter for one time in the day to get consecutive days (needs to overlap with rain dataframe)
-    df_foehn_day = df_foehn_day.loc[df_foehn["date"].dt.time == datetime.time(14, 0), :].reset_index(drop=True)
+    df_foehn_day = df_foehn_day.loc[df_foehn["date"].dt.time == datetime.time(day_start_time, 0), :].reset_index(drop=True)
 
     # Loop over all stations
     for st_nr, station in enumerate(stations):
@@ -444,18 +445,19 @@ def plot_fire_count_over_foehn_days(df_fires, df_foehn, stations, bins, hours=24
 
 
 # noinspection PyTypeChecker,PyUnresolvedReferences
-def plot_fire_day_count_over_foehn_days(df_fires, df_foehn, stations, bins, hours=24):
+def plot_fire_day_count_over_foehn_days(df_fires, df_foehn, stations, bins, day_start_time, hours=24):
     """
     Plot the count of fire days which showed prior foehn presence normalized by the general occurrence foehn days for a specific foehn duration
     :param df_fires: Fire dataframe
     :param df_foehn: Foehn dataframe
     :param stations: List of stations to plot
     :param bins: Bin boundaries for the foehn intervals
+    :param day_start_time: Start time of a "new" day
     :param hours:  Time period to consider (24 hours)
     """
 
     # Shift fires so that a new day "begins" at 14pm (peak of fire occurrence)
-    df_fires["date"] = (df_fires["start_date_min"] - pd.Timedelta("14h")).dt.date.astype(np.datetime64)
+    df_fires["date"] = (df_fires["start_date_min"] - pd.Timedelta(f"{day_start_time}h")).dt.date.astype(np.datetime64)
 
     # Define a fire day if at least one fire occurs at a station on a day
     df_fires = df_fires.drop_duplicates(subset=["date", "abbreviation"]).reset_index(drop=True)
@@ -473,7 +475,7 @@ def plot_fire_day_count_over_foehn_days(df_fires, df_foehn, stations, bins, hour
     df_foehn_day["date"] = df_foehn["date"].dt.date.astype(np.datetime64)
 
     # Filter for one time in the day to get consecutive days (needs to overlap with rain dataframe)
-    df_foehn_day = df_foehn_day.loc[df_foehn["date"].dt.time == datetime.time(14, 0), :].reset_index(drop=True)
+    df_foehn_day = df_foehn_day.loc[df_foehn["date"].dt.time == datetime.time(day_start_time, 0), :].reset_index(drop=True)
 
     # Loop over all stations
     for st_nr, station in enumerate(stations):
