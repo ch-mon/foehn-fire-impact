@@ -2,69 +2,157 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import *
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+import plotly.express as px
+import pandas as pd
+import mlflow
 
-def evaluate_regression(y_true, y_pred):
+def evaluate_regression(y_train_true, y_train_pred, y_test_true, y_test_pred):
     """
     Automatically evaluate the performance of a regressor (model-agnostic)
     """
-    # Calculate maximum range
-    min_val, max_val = min(np.min(y_true), np.min(y_pred)), max(np.max(y_true), np.max(y_pred))
-
-    # Prediction density plot
-    plt.figure()
-    sns.histplot(y_true, kde=True, bins=np.linspace(min_val, max_val, 20))
-    sns.histplot(y_pred, kde=True, bins=np.linspace(min_val, max_val, 20), color="orange")
-    plt.legend(["True", "Pred"])
-    plt.title("Prediction histogram")
-
-    # Scatter plot
-    plt.figure()
-    sns.scatterplot(x=y_true, y=y_pred)
-    plt.plot([min_val, max_val], [min_val, max_val], "r-")
-
-    # Regression metrics
-    digits = 4
-    mae = round(mean_absolute_error(y_true, y_pred), digits)
-    mse = round(mean_squared_error(y_true, y_pred), digits)
-    rmse = round(np.sqrt(mse), digits)
-    r2 = round(r2_score(y_true, y_pred), digits)
     
-    print('(MAE) Mean absolute error: ', mae)
-    #print('(MSE) Mean squared error: ', mse)
-    print('(RMSE) Root mean squared error: ', rmse)  # Gives a relatively high weight to large errors (compared to MAE)
-    #print('(RMSLE) Root mean squared log error: ', round(mean_squared_log_error(y_true, y_pred),4))  # Punishes underprediction harder, robuster towards outliers, also considers a relative error
-    #print('(MAPE) Mean absolute percentage error: ', round(mean_absolute_percentage_error(y_true, y_pred), 4))  # sensitive to relative errors, scale-invariant
-    #print('(MedAE) Median absolute error: ', round(median_absolute_error(y_true, y_pred), 4))  # Robust to outliers
-    print('(R2) R2-score: ', r2)
-    # print('(EV) Explained_variance: ', round(explained_variance_score(y_true, y_pred), 4))  # Equivalent to R2 if mean error/residuals == 0, otherwise bias in residuals
-    return mae, rmse, r2
+    # Little preprocessing to more conveniently use the variables
+    train = pd.DataFrame()
+    train["True value"] = y_train_true
+    train["Predicted value"] = y_train_pred
+    train["dataset"] = "train"
+    
+    test = pd.DataFrame()
+    test["True value"] = y_test_true
+    test["Predicted value"] = y_test_pred
+    test["dataset"] = "test"
+    
+    df = pd.concat([train, test], axis=0, ignore_index=True)
+    
+    # Make scatter plot
+    fig = px.scatter(data_frame=df, x="True value", y="Predicted value", facet_col="dataset")
+    
+    # Insert y=x line
+    min_val = min(train.drop(columns="dataset").min())
+    max_val = max(train.drop(columns="dataset").max())
+    
+    # Add y=x lines
+    fig.add_shape(
+        type='line', line=dict(dash='dash'),
+        x0=min_val, x1=max_val, y0=min_val, y1=max_val, row=1, col=1
+    )
+    fig.add_shape(
+        type='line', line=dict(dash='dash'),
+        x0=min_val, x1=max_val, y0=min_val, y1=max_val, row=1, col=2
+    )
 
-def evaluate_binary_classification(y_true, y_proba, threshold_optimized=None):
+    # Set some layout parameters    
+    fig.update_yaxes(scaleanchor="x", scaleratio=1)
+    fig.update_xaxes(constrain='domain')
+    fig.update_layout(height=500)
+
+    # Calculate regression metrics and annotate plot
+    digits = 3
+    for i, df in enumerate([train, test]):
+        mae = round(mean_absolute_error(df["True value"], df["Predicted value"]), digits)
+        mse = round(mean_squared_error(df["True value"], df["Predicted value"]), digits)
+        rmse = round(np.sqrt(mse), digits)
+        r2 = round(r2_score(df["True value"], df["Predicted value"]), digits)
+        
+        fig.add_annotation(text=f"(MAE) Mean absolute error: {mae} <br>(RMSE) Root mean squared error:  {rmse} <br>(R2) R2-score: {r2}",
+                  xref="x domain", yref="y domain", align="left",
+                  x=0, y=1, showarrow=False, row=1,col=i+1)
+        
+        # Log metrics if wanted
+        # set_ = df["dataset"].unique()[0]
+        # mlflow.log_metrics({f"mae_{set_}": mae, "rmse_{set_}": rmse, "r2_{set_}": r2})
+
+    fig.show() 
+    
+
+
+def evaluate_binary_classification(y_train_true, y_train_pred, y_test_true, y_test_pred, threshold_optimized=None):
     """
     Automatically evaluate the performance of a binary classifier (model-agnostic)
     """
+
+    # Little preprocessing to more conveniently use the variables
+    train = pd.DataFrame()
+    train["True value"] = y_train_true
+    train["Predicted value"] = y_train_pred
+    train["dataset"] = "train"
+
+    test = pd.DataFrame()
+    test["True value"] = y_test_true
+    test["Predicted value"] = y_test_pred
+    test["dataset"] = "test"
+
+    df = pd.concat([train, test], axis=0, ignore_index=True)
+
     # Prediction density plot
-    plt.figure()
-    sns.histplot(y_proba[y_true == 1], kde=True, binrange=[0, 1], bins=25)
-    sns.histplot(y_proba[y_true == 0], kde=True, binrange=[0, 1], bins=25, color="orange")
-    plt.legend(["class-1", "class-0"])
-    plt.title("Prediction density plot")
+    fig = px.histogram(data_frame=df, x="Predicted value", color="True value", facet_col="dataset", log_y=True, nbins=30, marginal="box", opacity=0.75)
+    fig.update_layout(barmode="overlay", height=500, hovermode="x")
+    fig.show()
 
-    # ROC curve
-    fpr, tpr, thresholds = roc_curve(y_true, y_proba)
-    RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
-    plt.axis('square')
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.title("ROC Curve")
+    # ROC curves
+    train_roc = pd.DataFrame()
+    train_roc["fpr"], train_roc["tpr"], thresholds = roc_curve(train["True value"], train["Predicted value"])
+    train_roc["dataset"] = "train"
 
-    # Precision-recall curve
-    precision, recall, thresholds = precision_recall_curve(y_true, y_proba)
-    PrecisionRecallDisplay(precision, recall).plot()
-    plt.axis('square')
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
-    plt.title("Precision Recall Curve")
+    test_roc = pd.DataFrame()
+    test_roc["fpr"], test_roc["tpr"], thresholds = roc_curve(test["True value"], test["Predicted value"])
+    test_roc["dataset"] = "test"
+
+    df_roc = pd.concat([train_roc, test_roc], axis=0, ignore_index=True)
+
+    fig = px.area(data_frame=df_roc,
+        y="tpr", x="fpr", facet_col="dataset",
+        labels=dict(tpr='False Positive Rate', fpr='True Positive Rate'), range_y=(0, 1), range_x=(0, 1),
+        height=500,
+    )
+
+    # Insert y=x line
+    fig.add_shape(
+        type='line', line=dict(dash='dash'),
+        x0=0, x1=1, y0=0, y1=1, col=1, row=1
+    )
+    fig.add_shape(
+        type='line', line=dict(dash='dash'),
+        x0=0, x1=1, y0=0, y1=1, col=2, row=1
+    )
+
+    fig.update_yaxes(scaleanchor="x", scaleratio=1)
+    fig.update_xaxes(constrain='domain')
+    fig.update_layout(hovermode="x")
+    fig.layout.annotations[0]['text'] = fig.layout.annotations[0]['text'] + f" (AUC: {round(roc_auc_score(train['True value'], train['Predicted value']),4)})"
+    fig.layout.annotations[1]['text'] = fig.layout.annotations[1]['text'] + f" (AUC: {round(roc_auc_score(test['True value'], test['Predicted value']),4)})"
+    fig.show()
+
+    # PR curves
+    train_roc = pd.DataFrame()
+    train_roc["pre"], train_roc["rec"], thresholds = precision_recall_curve(train["True value"], train["Predicted value"])
+    train_roc["dataset"] = "train"
+    auc_train = auc(train_roc["rec"], train_roc["pre"])
+
+    test_roc = pd.DataFrame()
+    test_roc["pre"], test_roc["rec"], thresholds = precision_recall_curve(test["True value"], test["Predicted value"])
+    test_roc["dataset"] = "test"
+    auc_test = auc(test_roc["rec"], test_roc["pre"])
+
+    df_roc = pd.concat([train_roc, test_roc], axis=0, ignore_index=True)
+
+    fig = px.area(data_frame=df_roc,
+                  x="rec", y="pre", facet_col="dataset",
+                  labels=dict(rec='Recall', pre='Precision'), range_y=(0, 1), range_x=(0, 1),
+                  height=500,
+                  )
+
+    fig.update_yaxes(scaleanchor="x", scaleratio=1)
+    fig.update_xaxes(constrain='domain')
+    fig.update_layout(hovermode="x")
+    fig.layout.annotations[0]['text'] = fig.layout.annotations[0]['text'] + f" (AUC: {round(auc_train, 4)})"
+    fig.layout.annotations[1]['text'] = fig.layout.annotations[1]['text'] + f" (AUC: {round(auc_test, 4)})"
+    fig.show()
+
+
+    return
 
     # Precision, Recall, and F1 over threshold
     plt.figure()
