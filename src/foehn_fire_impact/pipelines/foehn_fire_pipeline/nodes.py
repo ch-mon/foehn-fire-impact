@@ -11,12 +11,6 @@ def map_fires_to_foehn(df_fires, df_foehn, regions):
     :return: Fire dataframe with mapped foehn values
     """
 
-    # Only allow fires which are in the stations defined in the configs.
-    stations = []
-    for reg, sta in regions.items():
-        stations.extend(sta)
-    df_fires = df_fires.loc[df_fires["abbreviation"].isin(stations), :].reset_index(drop=True)
-
     # Loop over all fires
     rows_list = []
     for index, fire in df_fires.iterrows():
@@ -81,10 +75,5 @@ def add_control_variables(df, cause, regions):
     for year in range(1990, 2020 + 1, 10):
         decade_mask = (year - 10 <= df["start_date_min"].dt.year) & (df["start_date_min"].dt.year < year)
         df.loc[decade_mask, "decade"] = f"[{year - 10}, {year - 1}]"
-
-    # Remove fires in valleys with very little foehn
-    df = df.loc[~((df["abbreviation"] == "ROB") & (df["longitude"] < 9.8)), :].reset_index(drop=True).copy()
-    df = df.loc[~((df["abbreviation"] == "CHU") & (df["longitude"] < 9.35)), :].reset_index(drop=True).copy()
-    print(len(df))
 
     return df

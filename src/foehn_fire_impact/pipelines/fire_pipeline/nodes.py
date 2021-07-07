@@ -125,19 +125,20 @@ def calculate_closest_station(df_fire, df_stations, parameters, respect_topograp
     :return: Fire dataframe with now has the closest weather station associated.
     """
 
+    # Get path to main project directory
+    project_path = get_current_session().load_context().project_path
+
+    # Read list of all stations which should be taken into consideration
+    regions = parameters["regions"]
+    stations = regions["southern_switzerland"] + regions["northern_switzerland"]
+
     if respect_topography:
-        # Get path to main project directory
-        project_path = get_current_session().load_context().project_path
 
         # Read shape files from manual mapping efforts. Simply update shapefiles, if a different mapping is required
         # For whatever reason, column names in shapefile are cut
         shapes = geopandas.read_file(
             os.path.join(project_path, "data", "01_raw", "station_regions", "region_station_new.shp")
         )
-
-        # Read list of all stations which should be taken into consideration
-        regions = parameters["regions"]
-        stations = regions["southern_switzerland"] + regions["northern_switzerland"]
 
         # Only consider allowed stations
         shapes = shapes.loc[shapes["abbreviati"].isin(stations), :]
@@ -159,6 +160,16 @@ def calculate_closest_station(df_fire, df_stations, parameters, respect_topograp
         df_fire = pd.DataFrame(df_fire)
         del df_fire["geometry"]
 
+        # Remove fires in valleys with very little foehn (might want to remove this when updating the shapefiles)
+        df_fire = df_fire.loc[~((df_fire["abbreviation"] == "ROB") & (df_fire["longitude"] < 9.8)), :].reset_index(drop=True).copy()
+        df_fire = df_fire.loc[~((df_fire["abbreviation"] == "CHU") & (df_fire["longitude"] < 9.35)), :].reset_index(drop=True).copy()
+
+        # Calculate distance between station and fire
+        df_fire["closest_station_distance"] = calc_distance(
+            df_fire["coordinates_x"], df_fire["coordinates_y"],
+            df_stations["x_LV03"], df_stations["y_LV03"]
+        )
+
     else:
         # Drop Guetsch (which is just the crest station)
         df_stations = df_stations.loc[df_stations["abbreviation"] != "GUE", :].reset_index(drop=True)
@@ -166,12 +177,16 @@ def calculate_closest_station(df_fire, df_stations, parameters, respect_topograp
         # Greedily search through all distances and find the minimum
         df_fire["abbreviation"] = ""
         df_fire["closest_station_distance"] = 0.0
-        for i in range(len(df_fire.index)):
-            distances = calc_distance(df_fire.loc[i, "coordinates_x"], df_fire.loc[i, "coordinates_y"],
-                                      df_stations["x_LV03"], df_stations["y_LV03"])
+        for i in df_fire.index:
+            distances = calc_distance(
+                df_fire.loc[i, "coordinates_x"], df_fire.loc[i, "coordinates_y"],
+                df_stations["x_LV03"], df_stations["y_LV03"]
+            )
 
+            # Get indices and distance for closest station
             n = distances.idxmin()
             dist = distances.min()
+
             # Only map fires which are in a given radius around one of the weather stations
             if dist < parameters["station_radius"]:
                 df_fire.loc[i, "abbreviation"] = df_stations.loc[n, "abbreviation"]
@@ -180,7 +195,8 @@ def calculate_closest_station(df_fire, df_stations, parameters, respect_topograp
                 df_fire.loc[i, "abbreviation"] = np.nan
                 df_fire.loc[i, "closest_station_distance"] = np.nan
 
-    # Drop all rows where the fire could not mapped to a station
-    df_fire = df_fire.loc[df_fire["abbreviation"].notnull(), :]
+    # Drop all rows where the fire could not mapped to a station. Filter for fires which are at allowed stations
+    df_fire = df_fire.loc[df_fire["abbreviation"].notnull() & df_fire["abbreviation"].isin(stations), :]
     logging.debug(f"{len(df_fire)} fires in dataset")
+
     return df_fire

@@ -77,10 +77,6 @@ fire_data_with_foehn_and_control_variables:
 foehn_stations:
   type: pandas.CSVDataSet
   filepath: data/01_raw/foehn_stations_switzerland.csv
-
-foehn_stations_WSLmapped:
-  type: pandas.CSVDataSet
-  filepath: data/03_primary/foehn_stations_reduced.csv
   
 foehn_parameters:
   type: pandas.CSVDataSet
@@ -88,7 +84,7 @@ foehn_parameters:
 
 fire_cause:
   type: pandas.CSVDataSet
-  filepath: data/04_feature/fixed_lightning_fires.csv
+  filepath: data/01_raw/fixed_lightning_fires.csv
 
 # Rain data
 rain_data:
