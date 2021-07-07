@@ -22,15 +22,9 @@ fire_data_cleansed:
   type: pandas.CSVDataSet
   filepath: data/02_intermediate/FireData_1980_2019_cleansed.csv
 
-fire_data_cleansed_stations:
+fire_data_with_closest_station:
   type: pandas.CSVDataSet
   filepath: data/03_primary/fire_data_with_closest_station.csv
-  load_args:
-    parse_dates: ["start_date_min"]
-
-fire_data_with_closest_station_WSLmapped:
-  type: pandas.CSVDataSet
-  filepath: data/03_primary/fire_data_with_closest_station_WSLmapped.csv
   load_args:
     parse_dates: ["start_date_min"]
 

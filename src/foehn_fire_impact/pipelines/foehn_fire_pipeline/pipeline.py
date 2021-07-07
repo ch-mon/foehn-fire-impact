@@ -9,7 +9,7 @@ from .nodes import *
 def create_pipeline(**kwargs):
     return Pipeline([
         node(map_fires_to_foehn,
-             ["fire_data_with_closest_station_WSLmapped", "foehn_data_prepared", "params:regions"],
+             ["fire_data_with_closest_station", "foehn_data_prepared"],
              "fire_data_with_foehn",
              name="map_fires_to_foehn"
              ),

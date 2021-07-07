@@ -32,7 +32,7 @@ def create_pipeline(**kwargs):
             node(
                 calculate_closest_station,
                 ["fire_data_cleansed", "foehn_stations", "parameters"],
-                "fire_data_cleansed_stations",
+                "fire_data_with_closest_station",
                 name="calculate_closest_station"
             )
 
