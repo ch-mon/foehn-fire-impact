@@ -25,6 +25,13 @@ logs/**
 !data/01_raw/export_fires_1980-2019.xlsx
 !data/04_feature/fire_data_with_foehn_and_control_variables.csv
 
+# Allow shape files from manual mapping
+!data/01_raw/station_regions/* 
+
+# Allow manually fixed summer fires without cause
+!data/01_raw/fixed_lightning_fires.csv 
+
+
 ##########################
 # Common files
 
