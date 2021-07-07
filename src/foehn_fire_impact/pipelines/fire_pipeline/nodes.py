@@ -23,12 +23,14 @@ def cleanse_fire_data(df: pd.DataFrame) -> pd.DataFrame:
     #              inplace=True)
 
     # Drop rows where there are missing values in the date and accuracy variables
-    df.dropna(subset=["start date (solar time)", "end date (solar time)", "accuracy start date", "accuracy end date"],
-              inplace=True)
+    # Solar time is Swiss winter time (ie. CEST)
+    df.dropna(
+        subset=["start date (solar time)", "end date (solar time)", "accuracy start date", "accuracy end date"],
+        inplace=True
+    )
 
     # Drop rows where accuracy is not known to minute or hour accuracy
-    df = df.loc[df["accuracy start date"].isin(["minute", "hour"]) &
-             df["accuracy end date"].isin(["minute", "hour"]), :].copy()
+    df = df.loc[df["accuracy start date"].isin(["minute", "hour"]) & df["accuracy end date"].isin(["minute", "hour"]), :].copy()
 
     # NaN value in burned area means small burned area.
     # Thus replace zero and NaN values with 0.01 ha
@@ -40,6 +42,7 @@ def cleanse_fire_data(df: pd.DataFrame) -> pd.DataFrame:
 
     logging.debug(len(df.index))
     return df
+
 
 def transform_datetime(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -57,7 +60,7 @@ def transform_datetime(df: pd.DataFrame) -> pd.DataFrame:
     # Get minimum and maximum start datetimes
     mask_minute = df["accuracy start date"] == "minute"
     mask_hour = df["accuracy start date"] == "hour"
-    df.loc[mask_minute, "start_date_min"] = df.loc[mask_minute,"start date (solar time)"]
+    df.loc[mask_minute, "start_date_min"] = df.loc[mask_minute, "start date (solar time)"]
     df.loc[mask_hour, "start_date_min"] = df.loc[mask_hour, "start date (solar time)"].apply(lambda dt: dt.replace(minute=0))
     df.loc[mask_minute, "start_date_max"] = df.loc[mask_minute, "start date (solar time)"]
     df.loc[mask_hour, "start_date_max"] = df.loc[mask_hour, "start date (solar time)"].apply(lambda dt: dt.replace(minute=59))
@@ -65,32 +68,32 @@ def transform_datetime(df: pd.DataFrame) -> pd.DataFrame:
     # Get minimum and maximum end datetimes
     mask_minute = df["accuracy end date"] == "minute"
     mask_hour = df["accuracy end date"] == "hour"
-    df.loc[mask_minute, "end_date_min"] = df.loc[mask_minute,"end date (solar time)"]
+    df.loc[mask_minute, "end_date_min"] = df.loc[mask_minute, "end date (solar time)"]
     df.loc[mask_hour, "end_date_min"] = df.loc[mask_hour, "end date (solar time)"].apply(lambda dt: dt.replace(minute=0))
     df.loc[mask_minute, "end_date_max"] = df.loc[mask_minute, "end date (solar time)"]
     df.loc[mask_hour, "end_date_max"] = df.loc[mask_hour, "end date (solar time)"].apply(lambda dt: dt.replace(minute=59))
 
-    # Calculate minimum and maximum duration
+    # Calculate minimum and maximum duration (in hours)
     df["duration_min"] = (df["end_date_min"] - df["start_date_max"]).dt.total_seconds()/3600
     df["duration_max"] = (df["end_date_max"] - df["start_date_min"]).dt.total_seconds()/3600
 
-    # Drop durations which are negative or too short (or a year long)
-    print(((df["duration_min"] < 0.25) | (df["duration_max"] < 0.25)).sum())
-    df = df.loc[~((df["duration_min"] < 0.25) | (df["duration_max"] < 0.25) | (df["duration_min"] > 8000.0)), :]
+    # Drop fires which durations are negative, zero or more than 3 months long
+    df = df.loc[~((df["duration_min"] <= 0) | (df["duration_max"] <= 0) | (df["duration_min"] > 3*24*30)), :]
 
     logging.debug(len(df.index))
     return df
 
+
 def fill_missing_coordinates(df):
-    '''
-    Obtain coordinates for municipality and fill the missing coordinates in dataframe
+    """
+    Obtain center coordinates for municipality and fill the missing coordinates in dataframe
     :param df: Fire dataframe
     :return: Fire dataframe with filled coordinates
-    '''
+    """
 
     # Identify where x and y are missing
-    mask = df["coordinates_x"].isnull() | df["coordinates_y"].isnull()
-    list_of_municipalities = sorted(list(set(df.loc[mask, "current municipality"])))
+    missing_mask = df["coordinates_x"].isnull() | df["coordinates_y"].isnull()
+    list_of_municipalities = sorted(list(set(df.loc[missing_mask, "current municipality"])))
     logging.info(list_of_municipalities)
 
     # Retrieve locations for all municipalities via Nominatim API
@@ -102,15 +105,15 @@ def fill_missing_coordinates(df):
         logging.info(f"{municipality} ({location.address}): ({location.latitude}, {location.longitude})")
 
         # Convert to LV3 coordinates
-        x, y = decimalWSG84_to_LV3(lon = location.longitude, lat = location.latitude)
+        x, y = decimalWSG84_to_LV3(lon=location.longitude, lat=location.latitude)
 
         # Complete missing entries in dataframe
         municipality_mask = (df["current municipality"] == municipality)
-        df.loc[municipality_mask & mask, "coordinates_x"] = x
-        df.loc[municipality_mask & mask, "coordinates_y"] = y
+        df.loc[municipality_mask & missing_mask, "coordinates_x"] = x
+        df.loc[municipality_mask & missing_mask, "coordinates_y"] = y
 
     # Also create WSG84 coordinates
-    df["longitude"], df["latitude"] = LV3_to_decimalWSG84(x = df["coordinates_x"], y=df["coordinates_y"])
+    df["longitude"], df["latitude"] = LV3_to_decimalWSG84(x=df["coordinates_x"], y=df["coordinates_y"])
 
     return df
 
@@ -119,10 +122,10 @@ def calculate_closest_station(df_fire, df_stations, parameters, respect_topograp
     """
     Map each fire to the closest weather observation station
     :param df_fire: Fire dataframe
-    :param df_stations: Datafraem with all stations where a foehn index is available
-    :param parameters: Dict which holds the radius to consider around each weather station
+    :param df_stations: Dataframe with all stations where a foehn index is available
+    :param parameters: Dict with project global parameters
     :param respect_topography: Respect topography when mapping (True) or only draw a circle around each station (False)
-    :return: Fire dataframe with now has the closest weather station associated.
+    :return: Fire dataframe with the closest weather station.
     """
 
     # Get path to main project directory
@@ -133,7 +136,6 @@ def calculate_closest_station(df_fire, df_stations, parameters, respect_topograp
     stations = regions["southern_switzerland"] + regions["northern_switzerland"]
 
     if respect_topography:
-
         # Read shape files from manual mapping efforts. Simply update shapefiles, if a different mapping is required
         # For whatever reason, column names in shapefile are cut
         shapes = geopandas.read_file(
