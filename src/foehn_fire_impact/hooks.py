@@ -10,7 +10,7 @@ from kedro.versioning import Journal
 from foehn_fire_impact.pipelines import fire_pipeline as firepipeline
 from foehn_fire_impact.pipelines import foehn_pipeline as foehnpipeline
 from foehn_fire_impact.pipelines import foehn_fire_pipeline as foehnfirepipeline
-from foehn_fire_impact.pipelines import rain_pipeline as rainpipeline
+from foehn_fire_impact.pipelines import miscellaneous_datasets_pipeline as miscpipeline
 
 class ProjectHooks:
     @hook_impl
@@ -24,14 +24,14 @@ class ProjectHooks:
         fire_pipeline = firepipeline.create_pipeline()
         foehn_pipeline = foehnpipeline.create_pipeline()
         foehn_fire_pipeline = foehnfirepipeline.create_pipeline()
-        rain_pipeline = rainpipeline.create_pipeline()
+        misc_pipeline = miscpipeline.create_pipeline()
 
         return {
             "fire_pipeline": fire_pipeline,
             "foehn_pipeline": foehn_pipeline,
             "foehn_fire_pipeline": foehn_fire_pipeline,
-            "rain_pipeline": rain_pipeline,
-            "__default__": fire_pipeline+foehn_pipeline+foehn_fire_pipeline +rain_pipeline,
+            "miscellaneous_datasets_pipeline": misc_pipeline,
+            "__default__": fire_pipeline+foehn_pipeline+foehn_fire_pipeline+misc_pipeline,
         }
 
     @hook_impl
