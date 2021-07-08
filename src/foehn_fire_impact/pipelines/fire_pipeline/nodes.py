@@ -16,6 +16,8 @@ def cleanse_fire_data(df: pd.DataFrame) -> pd.DataFrame:
     :param df: Fire dataframe
     :return: Cleansed fire dataframe
     """
+
+    logging.info(f"{len(df.index)} fires in original dataset")
     # Drop superfluous columns
     # df.drop(columns=["ID cause reliability", "ID Cause", "ID exposition", "ID accuracy coordinates",
     #                       "ID accuracy end date", "ID accuracy start date", "ID current municipality",
@@ -40,7 +42,7 @@ def cleanse_fire_data(df: pd.DataFrame) -> pd.DataFrame:
     # Rename two columns due to inconsistency with SwissTopo coordinate transform guide
     df.rename(columns={"coordinates x": "coordinates_y", "coordinates y": "coordinates_x"}, inplace=True)
 
-    logging.debug(len(df.index))
+    logging.info(f"{len(df.index)} fires in dataset after filtering fires for certain start/end accuracy")
     return df
 
 
@@ -80,7 +82,7 @@ def transform_datetime(df: pd.DataFrame) -> pd.DataFrame:
     # Drop fires which durations are negative, zero or more than 3 months long
     df = df.loc[~((df["duration_min"] <= 0) | (df["duration_max"] <= 0) | (df["duration_min"] > 3*24*30)), :]
 
-    logging.debug(len(df.index))
+    logging.info(f"{len(df.index)} fires in dataset after filtering fires with unrealistic duration")
     return df
 
 
@@ -94,7 +96,7 @@ def fill_missing_coordinates(df):
     # Identify where x and y are missing
     missing_mask = df["coordinates_x"].isnull() | df["coordinates_y"].isnull()
     list_of_municipalities = sorted(list(set(df.loc[missing_mask, "current municipality"])))
-    logging.info(list_of_municipalities)
+    logging.info("Imputing the following municipalities: " + str(list_of_municipalities))
 
     # Retrieve locations for all municipalities via Nominatim API
     for municipality in list_of_municipalities:
@@ -102,7 +104,7 @@ def fill_missing_coordinates(df):
         time.sleep(1)
         geolocator = Nominatim(user_agent="MapSwissCitiesToLocation")
         location = geolocator.geocode(municipality, country_codes="CH")
-        logging.info(f"{municipality} ({location.address}): ({location.latitude}, {location.longitude})")
+        logging.info(f"Imputing {municipality} ({location.address}): ({location.latitude}, {location.longitude})")
 
         # Convert to LV3 coordinates
         x, y = decimalWSG84_to_LV3(lon=location.longitude, lat=location.latitude)
@@ -115,6 +117,7 @@ def fill_missing_coordinates(df):
     # Also create WSG84 coordinates
     df["longitude"], df["latitude"] = LV3_to_decimalWSG84(x=df["coordinates_x"], y=df["coordinates_y"])
 
+    logging.info(f"{len(df.index)} fires in dataset after coordinate imputation")
     return df
 
 
@@ -199,6 +202,6 @@ def calculate_closest_station(df_fire, df_stations, parameters, respect_topograp
 
     # Drop all rows where the fire could not mapped to a station. Filter for fires which are at allowed stations
     df_fire = df_fire.loc[df_fire["abbreviation"].notnull() & df_fire["abbreviation"].isin(stations), :]
-    logging.debug(f"{len(df_fire)} fires in dataset")
+    logging.info(f"{len(df_fire.index)} fires in dataset after mapping to stations")
 
     return df_fire

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import logging
+
 import pandas as pd
 from .utils import *
 
@@ -31,6 +33,7 @@ def map_fires_to_foehn(df_fires, df_foehn):
 
         rows_list.append(new_features_dict)
 
+    logging.info(f"{len(df_fires.index)} fires in dataset after adding foehn features")
     return pd.concat([df_fires, pd.DataFrame(rows_list)], axis=1)
 
 
@@ -76,4 +79,5 @@ def add_control_variables(df, cause, regions):
         decade_mask = (year - 10 <= df["start_date_min"].dt.year) & (df["start_date_min"].dt.year < year)
         df.loc[decade_mask, "decade"] = f"[{year - 10}, {year - 1}]"
 
+    logging.info(f"{len(df.index)} fires in dataset adding control variables and dropping Summer natural regime")
     return df

@@ -31,6 +31,7 @@ class ProjectHooks:
             "foehn_pipeline": foehn_pipeline,
             "foehn_fire_pipeline": foehn_fire_pipeline,
             "miscellaneous_datasets_pipeline": misc_pipeline,
+            "main_pipeline": fire_pipeline+foehn_fire_pipeline,
             "__default__": fire_pipeline+foehn_pipeline+foehn_fire_pipeline+misc_pipeline,
         }
 
