@@ -22,7 +22,11 @@ logs/**
 # Only allow specified files
 !data/01_raw/foehn_stations_switzerland.csv
 !data/01_raw/meteorological_parameters.csv
+
+# Allow raw fire data
 !data/01_raw/export_fires_1980-2019.xlsx
+
+# Allow final processed fire dataset
 !data/04_feature/fire_data_with_foehn_and_control_variables.csv
 
 # Allow shape files from manual mapping
@@ -30,6 +34,9 @@ logs/**
 
 # Allow manually fixed summer fires without cause
 !data/01_raw/fixed_lightning_fires.csv 
+
+# Allow rain data
+!data/03_primary/rain_data.csv
 
 
 ##########################
