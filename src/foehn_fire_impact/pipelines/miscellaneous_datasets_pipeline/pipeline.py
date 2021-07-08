@@ -1,6 +1,6 @@
 """
-Pipeline merging the before preprocessed fire and foehn data and adding some control variables (fire regime,
-foehn type, and decade) .
+Pipeline which acts as a wrapper for two functions to load and preprocess additional datasets.
+One will load spatial precipitation data, the other one fire indices data for each station.
 """
 from kedro.pipeline import Pipeline, node
 from .nodes import *

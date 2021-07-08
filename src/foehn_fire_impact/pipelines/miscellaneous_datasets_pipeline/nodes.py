@@ -96,9 +96,18 @@ def make_rain_dataset(df_stations, params):
 
 
 def load_fire_indices_data(df_stations, regions):
+    """
+    Load all fire indices data (daily) for all stations.
+    @param df_stations: Dataframe with all station coordinates.
+    @param regions: Dict with all stations in each region
+    @return: Dataframe with fire indices for each station.
+    DataFrame will be in long format (with date and station abbreviation as rows)
+    """
+
+    # Get project home directory
     project_path = get_current_session().load_context().project_path
 
-    # Define mapping between stations in our file and the data delivery
+    # Define mapping between stations in stations file and the data delivery
     station_mapping = {"Bad Ragaz": "Bad_Ragaz",
                        "Güttingen": "Guttingen",
                        "Hörnli": "Hornli",
@@ -113,10 +122,10 @@ def load_fire_indices_data(df_stations, regions):
 
     # Read all data from relevant stations into a dataframe
     df_raw = pd.DataFrame()
-    for region, stations in regions.items():
+    for region, stations in regions.items():  # Loop over all relevant stations
         for station in stations:
 
-            # Read the 19XX-2012 files
+            # Read the 19XX-2012 files and append to large dataframe
             try:
                 filename = os.path.join(project_path, "data", "01_raw", "fireindice_1981_2012", f"{abbrev_dict[station]}_RESULT.csv")
                 df_temp = pd.read_csv(filename)
@@ -127,7 +136,7 @@ def load_fire_indices_data(df_stations, regions):
             except FileNotFoundError:
                 logging.info(f"(1980-2012) {station} does not exist")
 
-            # Read the 2000-2018 files
+            # Read the 2000-2018 files and append to large dataframe
             try:
                 filename = os.path.join(project_path, "data", "01_raw", "fireindice_2000_2018", f"{station}_RESULT.csv")
                 df_temp = pd.read_csv(filename)
@@ -138,17 +147,20 @@ def load_fire_indices_data(df_stations, regions):
             except FileNotFoundError:
                 logging.info(f"(2000-2018) {station} does not exist")
 
-    # Convert date string to data
+    # Convert date string to date
     df_raw["DateYYYYMMDD"] = pd.to_datetime(df_raw["DateYYYYMMDD"], format='%Y%m%d')
 
     # Ensure a consistent time axis from beginning 1981 until end 2018
     time_axis = pd.DataFrame({"DateYYYYMMDD": pd.date_range(start="1981-01-01", end="2018-12-31", freq="1D")})
 
-    # Join fire indice data onto time axis and remove duplicates due to overlapping datasets (keep value from first dataset)
+    # Join fire indices data onto time axis
     df_full = pd.merge(time_axis, df_raw, on="DateYYYYMMDD", how="left")
+
+    # Remove duplicates due to overlapping datasets (keep value from first dataset)
     df_full = df_full.loc[~df_full.duplicated(subset=["DateYYYYMMDD", "abbreviation"], keep="first"), :]
     df_full = df_full.rename(columns={"DateYYYYMMDD": "date"})
 
+    # Drop superfluous columns
     df_full = df_full.drop(columns=["Date", "year", "month", "day"])
 
     return df_full
