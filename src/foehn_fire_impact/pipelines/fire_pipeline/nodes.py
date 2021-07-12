@@ -166,6 +166,7 @@ def calculate_closest_station(df_fire, df_stations, parameters, respect_topograp
         del df_fire["geometry"]
 
         # Remove fires in valleys with very little foehn (might want to remove this when updating the shapefiles)
+        # ROB are wrongly mapped fires
         df_fire = df_fire.loc[~((df_fire["abbreviation"] == "ROB") & (df_fire["longitude"] < 9.8)), :].reset_index(drop=True).copy()
         df_fire = df_fire.loc[~((df_fire["abbreviation"] == "CHU") & (df_fire["longitude"] < 9.35)), :].reset_index(drop=True).copy()
 
