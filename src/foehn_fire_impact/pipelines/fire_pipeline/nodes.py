@@ -141,6 +141,8 @@ def calculate_closest_station(df_fire, df_stations, parameters, respect_topograp
     if respect_topography:
         # Read shape files from manual mapping efforts. Simply update shapefiles, if a different mapping is required
         # For whatever reason, column names in shapefile are cut
+        # This command throws an ERROR message, however still works fine since we know the coordinate system (Reason: mapping was made with QGIS and now there is a PROJ package mismatch)
+        logging.info("Following ERROR message is fine. See comment in code.")
         shapes = geopandas.read_file(
             os.path.join(project_path, "data", "01_raw", "station_regions", "region_station_new.shp")
         )
