@@ -32,7 +32,8 @@ def create_pipeline(**kwargs):
                 prepare_foehn_data_for_forest_fire_merge,
                 ["foehn_data_cleansed", "params:regions"],
                 "foehn_data_prepared",
-                name="prepare_foehn_data_for_forest_fire_merge"
+                name="prepare_foehn_data_for_forest_fire_merge",
+                tags="setup"
             )
         ]
     )

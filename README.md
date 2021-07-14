@@ -26,6 +26,7 @@ If you want to run the pipelines yourself, here you find the most important kedr
 # Navigate to main directory of project and run
 conda env create -f src/environment.yml  # Install a new virtual environment
 conda activate foehnfireenv  # Activate the virtual environment
+kedro run --tag=setup  # Runs all nodes which are necessary to build all important datasets to be used in the further analysis
 ```
 
 Now you can run everything, certain pipelines, or nodes via 

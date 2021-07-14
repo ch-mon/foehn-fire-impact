@@ -16,6 +16,7 @@ def create_pipeline(**kwargs):
         node(load_fire_indices_data,
              ["foehn_stations", "params:regions"],
              "fire_indices_data",
-             name="load_fire_indices_data"
+             name="load_fire_indices_data",
+             tags="setup"
              )
     ])
