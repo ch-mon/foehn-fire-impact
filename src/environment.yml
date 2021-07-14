@@ -1,4 +1,4 @@
-name: foehnfirecorrplot
+name: foehnfireenv
 channels:
   - defaults
 dependencies:
@@ -15,9 +15,8 @@ dependencies:
   - xlrd
   - cartopy
   - netcdf4
-#  - geopandas
   - pip:
-    - kedro
+    - kedro==0.17.3
     - kedro-viz
     - openpyxl
     - geopandas
@@ -25,7 +24,5 @@ dependencies:
     - pytest
     - pytest-cov
     - plotly
-#    - xgboost
-#    - causalnex
-
-# Need to install "dypy" manually for fire map plotting (due to broken installation command)
+    - xgboost
+    - causalnex
